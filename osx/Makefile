@@ -71,7 +71,7 @@ $(cppobjs) : %.o : %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 glazc : $(cppobjs) $(cobjs)
-	$(CXX) -o glazc $^ -L~/Projects/llvm/lib/Debug $(LLVM_LIBS)
+	$(CXX) -o glazc $^ -L/Users/parkovski/Projects/llvm/lib/Debug $(LLVM_LIBS)
 
 .PHONY : clean cleanall
 clean :
