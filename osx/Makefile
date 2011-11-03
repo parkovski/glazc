@@ -7,7 +7,7 @@ cobjs := scanner.o
 CC := clang
 CXX := clang++
 
-VPATH := ../..
+VPATH := ..
 
 CFLAGS := -I/Users/parkovski/Projects/llvm-2.9/include \
 -I/Users/parkovski/Projects/llvm/include \

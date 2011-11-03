@@ -467,7 +467,9 @@ PointerCast::getLlvmValue(llvm::LLVMContext &context,
         it = static_cast<const IntrinsicType *>(refty);
         fromit = static_cast<const IntrinsicType *>(from_refty);
         
-        // void* is treated as i8* in llvm.
+        // void* is treated as i8* in llvm. Therefore, if we're casting between
+        // void* and char*, then we don't need to cast.
+
         if (!(((refty->isVoid() || from_refty->isVoid())
             && (refty->typeClass() == Type::INTRINSIC
                 && (it->getIntrinsicId() == IntrinsicType::CHAR
