@@ -21,12 +21,9 @@ Component::getLlvmModule() const {
     llvm_context = &llvm::getGlobalContext();
     module = new llvm::Module("GlazBASIC_Module", *llvm_context);
     
-    // For OS X / Intel x86_64
-    module->setDataLayout(
-        "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64"
-        ":64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0"
-        ":64-s0:64:64-f80:128:128-n8:16:32:64");
-    module->setTargetTriple("x86_64-apple-darwin10.0.0");
+    // For Windows x86
+	module->setTargetTriple("x86-pc-win32");
+    //module->setTargetTriple("x86_64-apple-darwin10.0.0");
     
     // Generate all required functions
     implicit_main->getLlvmAddr(*llvm_context, *module, 0);
@@ -39,7 +36,7 @@ Component::getLlvmModule() const {
     return module;
 }
 
-const llvm::Type *
+llvm::Type *
 IntrinsicType::getLlvmType(llvm::LLVMContext &context,
         llvm::Module &mod) const {
             
@@ -90,14 +87,14 @@ IntrinsicType::getLlvmType(llvm::LLVMContext &context,
     return cached;
 }
 
-const llvm::Type *
+llvm::Type *
 Struct::getLlvmType(llvm::LLVMContext &context,
         llvm::Module &mod) const {
             
     if (cached)
         return cached;
     
-    std::vector<const llvm::Type *> array;
+    std::vector<llvm::Type *> array;
     int nmembers = vars.size();
     array.reserve(nmembers);
     for (int i = 0; i < nmembers; ++i) {
@@ -105,11 +102,11 @@ Struct::getLlvmType(llvm::LLVMContext &context,
     }
     
     cached = llvm::StructType::get(context, array, alignment != 0);
-    mod.addTypeName("struct." + name, cached);
+	cached->setName("struct." + name);
     return cached;
 }
 
-const llvm::Type *
+llvm::Type *
 PointerType::getLlvmType(llvm::LLVMContext &context,
         llvm::Module &mod) const {
             
@@ -123,7 +120,7 @@ PointerType::getLlvmType(llvm::LLVMContext &context,
     return cached;
 }
 
-const llvm::Type *
+llvm::Type *
 ArrayType::getLlvmType(llvm::LLVMContext &context,
         llvm::Module &mod) const {
     
@@ -135,17 +132,17 @@ ArrayType::getLlvmType(llvm::LLVMContext &context,
     return cached;
 }
 
-const llvm::Type *
+llvm::Type *
 SubType::getLlvmType(llvm::LLVMContext &context,
         llvm::Module &mod) const {
             
     if (cached)
         return cached;
     
-    const llvm::Type *rettype = rtype->getLlvmType(context, mod);
+    llvm::Type *rettype = rtype->getLlvmType(context, mod);
     
     int nparams = param_types.size();
-    std::vector<const llvm::Type *> array;
+    std::vector<llvm::Type *> array;
     array.reserve(nparams);
     for (int i = 0; i < nparams; ++i) {
         array.push_back(param_types[i]->getLlvmType(context, mod));
@@ -433,6 +430,7 @@ AddrOf::getLlvmAddr(llvm::LLVMContext &context,
         llvm::Module &mod, llvm::BasicBlock *block) const {
     
     assert(0 && "can't take address of an address");
+    return 0;
 }
 
 llvm::Value *
@@ -572,6 +570,7 @@ IntToFpCast::getLlvmValue(llvm::LLVMContext &context,
         llvm::Module &mod, llvm::BasicBlock *block) const {
         
     assert(0 && "not implemented!");
+    return 0;
 }
 
 llvm::Value *
@@ -579,13 +578,14 @@ FpToIntCast::getLlvmValue(llvm::LLVMContext &context,
         llvm::Module &mod, llvm::BasicBlock *block) const {
         
     assert(0 && "not implemented!");
+    return 0;
 }
 
 llvm::Value *
 LitConstant::getLlvmValue(llvm::LLVMContext &context,
         llvm::Module &mod, llvm::BasicBlock *block) const {
         
-    // String constant?
+    // String constant? It has type array of char.
     if (type->typeClass() == Type::ARRAY) {
         // To access a string constant, we use the constant expression version
         // of the getelementptr instruction.
@@ -597,7 +597,7 @@ LitConstant::getLlvmValue(llvm::LLVMContext &context,
         llvm::Value *zero_arr[2] = { zero, zero };
         
         return llvm::ConstantExpr::getInBoundsGetElementPtr(
-            cached_gv, zero_arr, 2
+            cached_gv, llvm::ArrayRef<llvm::Value *>(zero_arr, 2)
         );
     }
     
@@ -660,21 +660,21 @@ llvm::Value *
 LitConstant::getLlvmAddr(llvm::LLVMContext &context,
         llvm::Module &mod, llvm::BasicBlock *block) const {
     
+    // String constants have type array of char.
     if (type->typeClass() != Type::ARRAY) {
         assert(0 && "can't take address of integer constant");
     }
     
     if (!cached_gv) {
-        llvm::Constant *strcon = llvm::ConstantArray::get(
+        llvm::Constant *strcon = llvm::ConstantDataArray::getString(
             context,
             str,
             true
         );
                 
         cached_gv = new llvm::GlobalVariable(mod,
-                strcon->getType(),
-                true, llvm::GlobalValue::InternalLinkage,
-                strcon, "", 0, false);
+                strcon->getType(), true,
+                llvm::GlobalValue::InternalLinkage, strcon);
         cached_gv->setUnnamedAddr(true);
     }
     
@@ -714,7 +714,7 @@ GlobalVar::getLlvmAddr(llvm::LLVMContext &context,
             );
         } else {
             init = llvm::ConstantPointerNull::get(
-                static_cast<const llvm::PointerType *>(
+                static_cast<llvm::PointerType *>(
                     type->getLlvmType(context, mod)
                 )
             );
@@ -766,7 +766,7 @@ LocalVar::genInitializer(llvm::LLVMContext &context, llvm::Module &mod,
             );
         } else {
             init = llvm::ConstantPointerNull::get(
-                static_cast<const llvm::PointerType *>(
+                static_cast<llvm::PointerType *>(
                     type->getLlvmType(context, mod)
                 )
             );
@@ -880,8 +880,7 @@ ArrayIndexer::getLlvmAddr(llvm::LLVMContext &context,
     llvm::GetElementPtrInst *gep =
         llvm::GetElementPtrInst::Create(
             var->getLlvmAddr(context, mod, block),
-            vals.begin(),
-            vals.end(),
+            vals,
             "",
             block
         );
@@ -893,6 +892,7 @@ StructAccessor::getLlvmValue(llvm::LLVMContext &context,
         llvm::Module &mod, llvm::BasicBlock *block) const {
     
     assert(0 && "not implemented!");
+    return 0;
 }
 
 llvm::Value *
@@ -900,6 +900,7 @@ StructAccessor::getLlvmAddr(llvm::LLVMContext &context,
         llvm::Module &mod, llvm::BasicBlock *block) const {
     
     assert(0 && "not implemented!");
+    return 0;
 }
 
 // Loads all the arguments for a call and returns a vector containing them.
@@ -962,7 +963,7 @@ CallExpr::getLlvmValue(llvm::LLVMContext &context,
         callAssist(context, mod, block, subty, exprlist);
         
     return llvm::CallInst::Create(sub->getLlvmAddr(context, mod, block),
-        args.begin(), args.end(), "", block);
+        args, "", block);
 }
 
 llvm::Value *
@@ -973,7 +974,7 @@ PtrCallExpr::getLlvmValue(llvm::LLVMContext &context,
         callAssist(context, mod, block, subty, exprlist);
         
     return llvm::CallInst::Create(var->getLlvmValue(context, mod, block),
-        args.begin(), args.end(), "", block);
+        args, "", block);
 }
 
 bool Label::genLlvm(llvm::LLVMContext &context, llvm::Module &mod,
@@ -1158,6 +1159,7 @@ bool SelectBlock::genLlvmIf(llvm::LLVMContext &context, llvm::Module &mod,
         llvm::BasicBlock *&block) const {
             
     assert(0 && "not implemented yet");
+    return 0;
 }
 
 bool SelectBlock::genLlvm(llvm::LLVMContext &context, llvm::Module &mod,
@@ -1173,6 +1175,7 @@ bool ForBlock::genLlvm(llvm::LLVMContext &context,
         llvm::Module &mod, llvm::BasicBlock *&block) const {
     
     assert(0 && "this one is hard...");
+    return 0;
 }
 
 bool WhileBlock::genLlvm(llvm::LLVMContext &context,
@@ -1259,8 +1262,8 @@ Sub::getLlvmFunction(llvm::LLVMContext &context, llvm::Module *mod) {
     if (function)
         return function;
     
-    const llvm::FunctionType *fnty =
-        static_cast<const llvm::FunctionType *>(
+    llvm::FunctionType *fnty =
+        static_cast<llvm::FunctionType *>(
             this->type->getLlvmType(context, *mod)
         );
         

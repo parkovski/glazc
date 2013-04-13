@@ -4,7 +4,7 @@
 #include "ast-expr.h"
 
 #include <cassert>
-#include <tr1/unordered_map>
+#include <unordered_map>
 #include <string>
 #include <vector>
 
@@ -36,10 +36,10 @@ class Expression;
 
 class Component {
 public:
-    typedef std::tr1::unordered_map<std::string, Var *> var_map;
+    typedef std::unordered_map<std::string, Var *> var_map;
     
     // This uses shared_ptrs because not all types will be stored here.
-    typedef std::tr1::unordered_map<std::string, const Type *> type_map;
+    typedef std::unordered_map<std::string, const Type *> type_map;
         
 private:
     // This includes all vars, subs, consts, setids, etc.
@@ -155,7 +155,7 @@ public:
     bool isVoid() const; // For easy test of void or not
     const PointerType *getPtrType() const;
     
-    virtual const llvm::Type *getLlvmType(llvm::LLVMContext &context,
+    virtual llvm::Type *getLlvmType(llvm::LLVMContext &context,
         llvm::Module &mod) const = 0;
 };
 
@@ -176,7 +176,7 @@ private:
     IntrinsicId which;
     const std::string name;
     
-    mutable const llvm::Type *cached;
+    mutable llvm::Type *cached;
     
 public:
     explicit IntrinsicType(IntrinsicId which);
@@ -187,7 +187,7 @@ public:
     virtual const std::string getName() const { return name; }
     IntrinsicId getIntrinsicId() const { return which; }
     
-    virtual const llvm::Type *getLlvmType(llvm::LLVMContext &context,
+    virtual llvm::Type *getLlvmType(llvm::LLVMContext &context,
         llvm::Module &mod) const;
 };
 
@@ -202,7 +202,7 @@ private:
     var_list vars;
     bool is_implemented; // for forward references
     
-    mutable const llvm::StructType *cached;
+    mutable llvm::StructType *cached;
     
 public:
     explicit Struct(const std::string name) :
@@ -230,7 +230,7 @@ public:
     bool isImplemented() const { return is_implemented; }
     bool addVar(std::string name, Var *var);
     
-    virtual const llvm::Type *getLlvmType(llvm::LLVMContext &context,
+    virtual llvm::Type *getLlvmType(llvm::LLVMContext &context,
         llvm::Module &mod) const;
 };
 
@@ -238,7 +238,7 @@ class PointerType : public Type {
     const Type *referenced;
     const std::string name;
     
-    mutable const llvm::Type *cached;
+    mutable llvm::Type *cached;
     
     friend const PointerType *Type::getPtrType() const;
     
@@ -256,7 +256,7 @@ public:
     
     const Type *getRefType() const { return referenced; }
     
-    virtual const llvm::Type *getLlvmType(llvm::LLVMContext &context,
+    virtual llvm::Type *getLlvmType(llvm::LLVMContext &context,
         llvm::Module &mod) const;
 };
 
@@ -264,7 +264,7 @@ class ArrayType : public Type {
     const Type *referenced;
     const std::string name;
     
-    mutable const llvm::Type *cached;
+    mutable llvm::Type *cached;
     
     std::vector<unsigned> bounds;
     unsigned sd_bounds;
@@ -282,7 +282,7 @@ public:
     unsigned getNumBounds() const { return bounds.size(); }
     unsigned getBound(unsigned n) const { return bounds[n]; }
     
-    virtual const llvm::Type *getLlvmType(llvm::LLVMContext &context,
+    virtual llvm::Type *getLlvmType(llvm::LLVMContext &context,
         llvm::Module &mod) const;
 };
 
@@ -304,11 +304,13 @@ private:
     mutable std::string name;
     int flags;
     
-    mutable const llvm::Type *cached;
+    mutable llvm::Type *cached;
     
 public:
     explicit SubType(std::string name) :
         Type(),
+        rtype(0),
+        param_types(),
         name(name),
         flags(0),
         cached(0) { }
@@ -341,7 +343,7 @@ public:
     int paramSize() const { return param_types.size(); }
     const Type *getParam(int i) const { return param_types[i]; }
     
-    virtual const llvm::Type *getLlvmType(llvm::LLVMContext &context,
+    virtual llvm::Type *getLlvmType(llvm::LLVMContext &context,
         llvm::Module &mod) const;
 };
 

@@ -96,7 +96,8 @@ enum {
 };
 
 typedef struct Scanner {
-    int             fd;
+    /*int             fd;*/
+    FILE            *file;
     unsigned int    line;
     const char      *filename;
     unsigned char   *bot, *tok, *ptr, *cur,
@@ -152,9 +153,6 @@ extern int commands_get_from_range(const char *wordbegin, const char *wordend);
 
 #ifdef __cplusplus
 } /* extern "C" */
-#endif
-
-#ifdef __cplusplus
 } /* namespace glaz */
 #endif
 

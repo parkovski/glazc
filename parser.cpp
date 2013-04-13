@@ -1040,15 +1040,15 @@ Token *Parser::declareStmt() {
     if (scan() == SCON) {
         Token *str = gettok();
         
-        bool cdecl = false;
+        bool isCdecl = false;
         int index = 1; // skip past the first quote
         // Get the different options
         while (true) {
             switch (str->text[index]) {
             case '!':
-                if (cdecl)
+                if (isCdecl)
                     warn("duplicate option \"!\"");
-                cdecl = true;
+                isCdecl = true;
                 break;
                 
             case '+':
@@ -1868,7 +1868,9 @@ Token *Parser::doStmt() {
 // Parses a list of statements separated by stmtSeparator and returns a list
 // of Tokens representing the program.
 Token *Parser::parse() {
-    Token *token, *next, *head;
+    Token *token = 0;
+    Token *next = 0;
+    Token *head = 0;
     
     // Get the first token
     scan();

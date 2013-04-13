@@ -1,17 +1,17 @@
 #include "glaz.h"
-#include <boost/unordered_map.hpp>
+#include <unordered_map>
 #include <string>
 
 namespace glaz {
 
 namespace {
-boost::unordered_map<std::string, int> *commands_map;
+std::unordered_map<std::string, int> *commands_map;
 }
 
 extern "C" {
     void commands_put(const char *word, int id) {
         if (!commands_map) {
-            commands_map = new boost::unordered_map<std::string, int>();
+            commands_map = new std::unordered_map<std::string, int>();
             commands_map[0][word] = id;
         } else {
             if (commands_map->find(word) == commands_map->end())
@@ -23,7 +23,7 @@ extern "C" {
         if (!commands_map)
             return 0;
         
-        boost::unordered_map<std::string, int>::const_iterator
+        std::unordered_map<std::string, int>::const_iterator
             entry = commands_map->find(word);
         if (entry == commands_map->end())
             return 0;
@@ -36,7 +36,7 @@ extern "C" {
         
         std::string word(wordbegin, (size_t)(wordend-wordbegin));
 
-        boost::unordered_map<std::string, int>::const_iterator
+        std::unordered_map<std::string, int>::const_iterator
             entry = commands_map->find(word);
         if (entry == commands_map->end())
             return 0;

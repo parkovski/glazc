@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <getopt.h>
 #include <string.h>
 
 #include "scanner.h"
@@ -19,8 +18,8 @@
 #include <llvm/LLVMContext.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JIT.h>
-#include <llvm/Target/TargetSelect.h>
-#include <llvm/Target/TargetData.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/DataLayout.h>
 
 using namespace std;
 using namespace glaz;
@@ -97,7 +96,7 @@ int main(int argc, char *argv[]) {
     if (!filename) {
         //cout << "error: required input file" << endl;
         //return 1;
-        filename = "../../test.gb";
+        filename = "test.gb";
     }
         
     Parser *parser = Parser::create(filename);
@@ -137,7 +136,7 @@ int main(int argc, char *argv[]) {
             llvm::ExecutionEngine *engine = llvm::EngineBuilder(mod).create();
             
             llvm::PassManager pm;
-            pm.add(new llvm::TargetData(*engine->getTargetData()));
+            //pm.add(new llvm::TargetData(*engine->getTargetData()));
             pm.add(llvm::createBasicAliasAnalysisPass());
             pm.add(llvm::createConstantPropagationPass());
             pm.add(llvm::createFunctionInliningPass());
@@ -170,6 +169,8 @@ int main(int argc, char *argv[]) {
     delete parser;
     
     globalCleanup();
+
+    system("pause");
     
     return 0;
 }

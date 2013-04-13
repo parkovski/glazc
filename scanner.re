@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
-#include <unistd.h>
 
 #include "scanner.h"
 
@@ -43,7 +42,8 @@ uchar *fill(Scanner *s, uchar *cursor){
             free(s->bot);
             s->bot = buf;
         }
-        if((cnt = read(s->fd, (char*) s->lim, BSIZE)) != BSIZE){
+		if((cnt = fread(s->lim, 1, BSIZE, s->file)) != BSIZE){
+        /*if((cnt = read(s->fd, (char*) s->lim, BSIZE)) != BSIZE){*/
             s->eof = &s->lim[cnt]; *(s->eof)++ = '\n';
         }
         s->lim += cnt;
@@ -282,15 +282,19 @@ retpoint:
 }
 
 Scanner *scanner_init(const char *fn) {
-    int fd = open(fn, O_RDONLY);
+	FILE *file = fopen(fn, "r");
+	Scanner *s;
+    /*int fd = open(fn, O_RDONLY);*/
     
-    if (fd < 0) {
+	/*if (fd < 0) {*/
+    if (!file) {
         return NULL;
     }
     
-    Scanner *s = (Scanner *)malloc(sizeof(struct Scanner));
+    s = (Scanner *)malloc(sizeof(struct Scanner));
     memset(s, 0, sizeof(struct Scanner));
-    s->fd = fd;
+    /*s->fd = fd;*/
+	s->file = file;
     s->line = 1;
     s->filename = fn;
     
@@ -298,7 +302,8 @@ Scanner *scanner_init(const char *fn) {
 }
 
 void scanner_deinit(Scanner *s) {
-    close(s->fd);
+    /*close(s->fd);*/
+	fclose(s->file);
     if (s->bot)
         free(s->bot);
     free(s);
@@ -314,7 +319,8 @@ Token *token_from_scanner(const Scanner *scanner, unsigned id,
     tok->loc = *loc;
     tok->next = 0;
     tok->child = 0;
-    memcpy(tok->text, scanner->tok, textlen + 1);
+    memcpy(tok->text, scanner->tok, textlen);
+	tok->text[textlen] = 0;
     return tok;
 }
 
