@@ -1058,7 +1058,7 @@ Component::getType(const Token *tok) const {
 }
 
 Var *
-Component::resolveVar(const std::string name, const Sub *sub) const {
+Component::resolveVar(const std::string &name, const Sub *sub) const {
     // Try to find in locals, then params, then globals. Return null if not
     // found in any of those.
     

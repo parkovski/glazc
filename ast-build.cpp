@@ -720,7 +720,7 @@ Component::Component() : llvm_context(0), module(0) {
 Component::~Component() {
 }
 
-Sub *Component::getSub(const std::string name) const {
+Sub *Component::getSub(const std::string &name) const {
     var_map::const_iterator entry = vars.find(boost::to_lower_copy(name));
         
     if (entry == vars.end())
@@ -730,7 +730,7 @@ Sub *Component::getSub(const std::string name) const {
     return static_cast<Sub *>(entry->second);
 }
 
-Sub *Component::insertSub(const std::string name, int flags) {
+Sub *Component::insertSub(const std::string &name, int flags) {
     std::string lower = boost::to_lower_copy(name);
     if (vars.find(lower) != vars.end())
         return 0;
@@ -739,7 +739,7 @@ Sub *Component::insertSub(const std::string name, int flags) {
     return sub;
 }
 
-const Type *Component::getType(const std::string name) const {
+const Type *Component::getType(const std::string &name) const {
     type_map::const_iterator entry =
         types.find(boost::to_lower_copy(name));
     
@@ -748,7 +748,7 @@ const Type *Component::getType(const std::string name) const {
     return entry->second;
 }
 
-bool Component::insertType(const std::string name, const Type *type) {
+bool Component::insertType(const std::string &name, const Type *type) {
     std::string lower = boost::to_lower_copy(name);
     if (types.find(lower) != types.end())
         return false;
@@ -756,7 +756,7 @@ bool Component::insertType(const std::string name, const Type *type) {
     return true;
 }
 
-Var *Component::getVar(const std::string name) const {
+Var *Component::getVar(const std::string &name) const {
     var_map::const_iterator entry =
         vars.find(boost::to_lower_copy(name));
         
@@ -766,7 +766,7 @@ Var *Component::getVar(const std::string name) const {
     return entry->second;
 }
 
-bool Component::insertVar(const std::string name, Var *var) {
+bool Component::insertVar(const std::string &name, Var *var) {
     std::string lower = boost::to_lower_copy(name);
     if (vars.find(lower) != vars.end())
         return false;

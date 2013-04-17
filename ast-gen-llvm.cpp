@@ -1267,11 +1267,7 @@ Sub::getLlvmFunction(llvm::LLVMContext &context, llvm::Module *mod) {
             this->type->getLlvmType(context, *mod)
         );
         
-    std::string gen_name;
-    if (flags & HAS_ALIAS)
-        gen_name = aliasname;
-    else
-        gen_name = name;
+    std::string &gen_name = (flags & HAS_ALIAS) ? aliasname : name;
     
     //function = static_cast<llvm::Function *>(
     //  mod->getOrInsertFunction(gen_name, fnty)

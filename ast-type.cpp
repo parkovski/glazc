@@ -79,7 +79,7 @@ bool Struct::operator==(const Type &rhs) const {
 	return true;
 }
 
-bool Struct::addVar(std::string name, Var *var) {
+bool Struct::addVar(const std::string &name, Var *var) {
 	std::string lower = boost::to_lower_copy(name);
 	for (var_list::const_iterator iter = vars.begin(); iter != vars.end();
 			++iter) {
@@ -129,7 +129,7 @@ ArrayType::ArrayType(const Type *ty, unsigned bounds) :
 	bounds(1, bounds),
 	sd_bounds(bounds) { }
 
-ArrayType::ArrayType(const Type *ty, std::vector<unsigned> bounds) :
+ArrayType::ArrayType(const Type *ty, const std::vector<unsigned> &bounds) :
 		Type(),
 		referenced(ty),
 		name(makeArrayName(ty, bounds)),
@@ -172,7 +172,7 @@ bool SubType::operator==(const Type &rhs) const {
 	return true;
 }
 
-const std::string SubType::getName() const {
+std::string SubType::getName() const {
 	/*if (!name.empty())
 		return name;
 	

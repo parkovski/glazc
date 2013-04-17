@@ -98,7 +98,7 @@ private:
     bool pass2_print(Token *&tree, Sub *sub);
     
     const Type *getType(const Token *tok) const;
-    Var *resolveVar(const std::string name, const Sub *sub) const;
+    Var *resolveVar(const std::string &name, const Sub *sub) const;
     
 public:
     explicit Component();
@@ -109,14 +109,14 @@ public:
     
     Sub *getMain() { return implicit_main; }
     
-    Sub *getSub(const std::string name) const;
-    Sub *insertSub(const std::string name, int flags);
+    Sub *getSub(const std::string &name) const;
+    Sub *insertSub(const std::string &name, int flags);
     
-    const Type *getType(const std::string name) const;
-    bool insertType(const std::string name, const Type *type);
+    const Type *getType(const std::string &name) const;
+    bool insertType(const std::string &name, const Type *type);
     
-    Var *getVar(const std::string name) const;
-    bool insertVar(const std::string name, Var *var);
+    Var *getVar(const std::string &name) const;
+    bool insertVar(const std::string &name, Var *var);
     
     llvm::Module *getLlvmModule() const;
     // Not valid to call this until getLlvmModule has been called.
@@ -151,7 +151,7 @@ public:
     // intrinsic, structure, pointer, array, etc.
     virtual int typeClass() const = 0;
     virtual bool operator==(const Type &rhs) const = 0;
-    virtual const std::string getName() const = 0;
+    virtual std::string getName() const = 0;
     bool operator!=(const Type &rhs) const { return !(*this == rhs); }
     bool isVoid() const; // For easy test of void or not
     const PointerType *getPtrType() const;
@@ -185,7 +185,7 @@ public:
     //virtual void toXml(std::ostream &file, int indent) const;
     virtual int typeClass() const { return INTRINSIC; }
     virtual bool operator==(const Type &rhs) const;
-    virtual const std::string getName() const { return name; }
+    virtual std::string getName() const { return name; }
     IntrinsicId getIntrinsicId() const { return which; }
     
     virtual llvm::Type *getLlvmType(llvm::LLVMContext &context,
@@ -206,14 +206,14 @@ private:
     mutable llvm::StructType *cached;
     
 public:
-    explicit Struct(const std::string name) :
+    explicit Struct(const std::string &name) :
         Type(),
         name(name),
         alignment(0),
         is_implemented(false),
         cached(0) { }
         
-    explicit Struct(const std::string name, unsigned align) :
+    explicit Struct(const std::string &name, unsigned align) :
         Type(),
         name(name),
         alignment(align),
@@ -225,11 +225,11 @@ public:
     //virtual void toXml(std::ostream &file, int indent) const;
     virtual int typeClass() const { return STRUCT; }
     virtual bool operator==(const Type &rhs) const;
-    virtual const std::string getName() const { return name; }
+    virtual std::string getName() const { return name; }
     
     void setImplFlag() { is_implemented = true; }
     bool isImplemented() const { return is_implemented; }
-    bool addVar(std::string name, Var *var);
+    bool addVar(const std::string &name, Var *var);
     
     virtual llvm::Type *getLlvmType(llvm::LLVMContext &context,
         llvm::Module &mod) const;
@@ -253,7 +253,7 @@ public:
     //virtual void toXml(std::ostream &file, int indent) const;
     virtual int typeClass() const { return POINTER; }
     virtual bool operator==(const Type &rhs) const;
-    virtual const std::string getName() const { return name; }
+    virtual std::string getName() const { return name; }
     
     const Type *getRefType() const { return referenced; }
     
@@ -272,11 +272,11 @@ class ArrayType : public Type {
     
 public:
     explicit ArrayType(const Type *ty, unsigned bounds);
-    explicit ArrayType(const Type *ty, std::vector<unsigned> bounds);
+    explicit ArrayType(const Type *ty, const std::vector<unsigned> &bounds);
             
     virtual int typeClass() const { return ARRAY; }
     virtual bool operator==(const Type &rhs) const;
-    virtual const std::string getName() const { return name; }
+    virtual std::string getName() const { return name; }
     
     const Type *getRefType() const { return referenced; }
     
@@ -308,7 +308,7 @@ private:
     mutable llvm::Type *cached;
     
 public:
-    explicit SubType(std::string name) :
+    explicit SubType(const std::string &name) :
         Type(),
         rtype(0),
         param_types(),
@@ -322,7 +322,7 @@ public:
     
     // Note: name is finalized when you call this, so you should not add any
     // more parameters or set the return type after calling this.
-    virtual const std::string getName() const;
+    virtual std::string getName() const;
     
     int getFlags() const { return flags; }
     void addFlags(int fl) { flags |= fl; }
@@ -477,7 +477,7 @@ public:
     explicit LitConstant(signed long long ll, const Type *ty);
     explicit LitConstant(unsigned long long ull, const Type *ty);
     explicit LitConstant(double d, const Type *ty);
-    explicit LitConstant(std::string str, const Type *ty);
+    explicit LitConstant(const std::string &str, const Type *ty);
     
     long long getLL() const { return value.ll; }
     double getDouble() const { return value.d; }
@@ -499,15 +499,15 @@ protected:
     Expression *initializer;
     
 public:
-    explicit Var(std::string name, const Type *type) :
+    explicit Var(const std::string &name, const Type *type) :
         Expression(type), name(name), initializer() { }
-    explicit Var(std::string name, Expression *init) :
+    explicit Var(const std::string &name, Expression *init) :
         Expression(init->getType()), name(name), initializer(init) { }
     
     //virtual void toXml(std::ostream &file, int indent) const;
     
-    const std::string getName() const { return name; }
-    void setName(std::string newname) { name = newname; }
+    std::string getName() const { return name; }
+    void setName(const std::string &newname) { name = newname; }
     
     virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
         llvm::Module &mod, llvm::BasicBlock *block) const;
@@ -519,9 +519,9 @@ class GlobalVar : public Var {
     mutable llvm::GlobalVariable *cached_gv;
     
 public:
-    explicit GlobalVar(const std::string name, const Type *type) :
+    explicit GlobalVar(const std::string &name, const Type *type) :
         Var(name, type), cached_gv(0) { }
-    explicit GlobalVar(const std::string name, Expression *init) :
+    explicit GlobalVar(const std::string &name, Expression *init) :
         Var(name, init), cached_gv(0) { }
         
     virtual int exprClass() const { return GLOBALVAR; }
@@ -534,9 +534,9 @@ class LocalVar : public Var {
     mutable llvm::AllocaInst *cached_alloca;
     
 public:
-    explicit LocalVar(const std::string name, const Type *type) :
+    explicit LocalVar(const std::string &name, const Type *type) :
         Var(name, type), cached_alloca(0) { }
-    explicit LocalVar(const std::string name, Expression *init) :
+    explicit LocalVar(const std::string &name, Expression *init) :
         Var(name, init), cached_alloca(0) { }
         
     virtual int exprClass() const { return LOCALVAR; }
@@ -555,7 +555,7 @@ class Param : public Var {
     llvm::Value *cached_val;
     
 public:
-    explicit Param(const std::string name, const Type *type) :
+    explicit Param(const std::string &name, const Type *type) :
         Var(name, type), cached_alloca(0), cached_val(0) { }
         
     virtual int exprClass() const { return PARAM; }
@@ -578,7 +578,10 @@ public:
 static const Type *getRefType(Var *var) {
     if (var->getType()->typeClass() == Type::POINTER)
         return static_cast<const PointerType *>(var->getType())->getRefType();
-    return static_cast<const ArrayType *>(var->getType())->getRefType();
+    if (var->getType()->typeClass() == Type::ARRAY)
+        return static_cast<const ArrayType *>(var->getType())->getRefType();
+    assert(0 && "can't get referring type for non-pointer or array type!");
+    return 0;
 }
 
 class ArrayIndexer : public Indexable {
@@ -679,11 +682,11 @@ class Label : public InOrderNode {
     const std::string name;
     
 public:
-    explicit Label(const std::string name) : name(name) { }
+    explicit Label(const std::string &name) : name(name) { }
     
     //virtual void toXml(std::ostream &file, int indent) const;
     
-    const std::string getName() const { return name; }
+    std::string getName() const { return name; }
     
     virtual bool genLlvm(llvm::LLVMContext &context,
         llvm::Module &mod, llvm::BasicBlock *&block) const;
@@ -909,7 +912,7 @@ public:
         HAS_ALIAS = 0x8
     };
     
-    explicit Sub(const std::string name, const Type *type, int flags) :
+    explicit Sub(const std::string &name, const Type *type, int flags) :
         Var(name, type), first(0), current_container(0), flags(flags),
         function(0) { }
         
@@ -921,34 +924,34 @@ public:
     int getFlags() const { return flags; }
     void setImplFlag() { flags |= IMPLEMENTED; }
     
-    void setLib(std::string lib) { flags |= HAS_LIB; libname = lib; }
+    void setLib(const std::string &lib) { flags |= HAS_LIB; libname = lib; }
     const std::string getLib() const { return libname; }
     
-    void setAlias(std::string alias) { flags |= HAS_ALIAS; aliasname = alias; }
+    void setAlias(const std::string &alias) { flags |= HAS_ALIAS; aliasname = alias; }
     const std::string getAlias() const { return aliasname; }
     
     void setType(const Type *newtype) { type = newtype; }
     
-    bool addParamOrLocal(const std::string name, Var *var);
+    bool addParamOrLocal(const std::string &name, Var *var);
     
     // returns false if there is already a param with that name.
-    bool addParam(const std::string name, Param *param) {
+    bool addParam(const std::string &name, Param *param) {
         return addParamOrLocal(name, param);
     }
     
     // returns false if there is already a param or local with that name.
-    bool addLocal(const std::string name, LocalVar *local) {
+    bool addLocal(const std::string &name, LocalVar *local) {
         return addParamOrLocal(name, local);
     }
     
     // gets a var from params or locals
-    Var *getVar(const std::string name) const;
+    Var *getVar(const std::string &name) const;
     Var *getVar(unsigned int index) const;
     
-    bool setVarName(std::string oldname, std::string newname);
+    bool setVarName(const std::string &oldname, const std::string &newname);
         
-    bool addLabel(const std::string name);
-    Label *getLabel(const std::string name) const;
+    bool addLabel(const std::string &name);
+    Label *getLabel(const std::string &name) const;
 
     Container *getCurrentContainer() { return current_container; }
     // Requires current container == c->parent

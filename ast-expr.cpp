@@ -33,7 +33,7 @@ LitConstant::LitConstant(double d, const Type *ty) :
     value.d = d;
 }
 
-LitConstant::LitConstant(std::string str, const Type *ty) :
+LitConstant::LitConstant(const std::string &str, const Type *ty) :
         Expression(ty), str(str), cached(0), cached_gv(0) {
         
     // Unescape the string (remove quotes and embedded double quotes)

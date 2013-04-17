@@ -25,7 +25,7 @@ class Parser {
     
     bool had_error;
     
-    Parser(Scanner *sc, const std::string filename, Diagnostics *diag) :
+    Parser(Scanner *sc, const std::string &filename, Diagnostics *diag) :
         scanner(sc),
         diag(diag),
         filename(filename),
