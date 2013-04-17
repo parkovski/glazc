@@ -52,10 +52,34 @@ enum EmitterMode {
     ASM
 };
 
+// Exports to get the command line arguments from a GB program.
+extern "C" {
+
+static int global_argc;
+static char **global_argv;
+
+__declspec(dllexport)
+int GetArgCount() {
+    return global_argc;
+}
+
+__declspec(dllexport)
+char *GetArg(int n) {
+    if (n >= global_argc) {
+        return "";
+    }
+    return global_argv[n];
+}
+
+}
+
 int main(int argc, char *argv[]) {
+    global_argc = argc;
+    global_argv = argv;
+
     const char *filename = 0;
-    
     EmitterMode emitter = ASM;
+    bool dump_llvm = false;
     
     for (int i = 1; i < argc; i++) {
         int len = strlen(argv[i]);
@@ -64,6 +88,8 @@ int main(int argc, char *argv[]) {
             if (!strcmp(argv[i], "-h")) {
                 printhelp();
                 return 0;
+            } else if (!strcmp(argv[i], "-ll")) {
+                dump_llvm = true;
             } else if (len > 6 && !memcmp(argv[i], "-emit:", 6)) {
                 if (len == 15 && !memcmp(&argv[i][6], "component", 9))
                     emitter = COMPONENT;
@@ -146,7 +172,9 @@ int main(int argc, char *argv[]) {
             pm.add(llvm::createInstructionCombiningPass());
             pm.add(llvm::createCFGSimplificationPass());
             pm.add(llvm::createConstantMergePass());
-            pm.add(llvm::createPrintModulePass(&llvm::outs()));
+            if (dump_llvm) {
+                pm.add(llvm::createPrintModulePass(&llvm::outs()));
+            }
             pm.run(*mod);
             
             void *fptr = engine->getPointerToFunction(main_f);

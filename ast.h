@@ -95,6 +95,7 @@ private:
     bool pass2_for(Token *&tree, Sub *sub);
     bool pass2_while(Token *&tree, Sub *sub);
     bool pass2_do(Token *&tree, Sub *sub);
+    bool pass2_print(Token *&tree, Sub *sub);
     
     const Type *getType(const Token *tok) const;
     Var *resolveVar(const std::string name, const Sub *sub) const;

@@ -586,7 +586,13 @@ Token *Parser::primary() {
     case COMMAND:
         token = gettok();
         scan();
-        callnode = call(token);
+        if (current == '(') {
+            callnode = call(token);
+        } else {
+            // No parens = no params allowed
+            callnode = token_from_text("call", CALL);
+            callnode->child = token;
+        }
         if (callnode)
             return callnode;
         else {

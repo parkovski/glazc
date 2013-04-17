@@ -87,6 +87,11 @@ bool Component::pass2(Token *tree, Sub *sub) {
         case DO:
             success &= pass2_do(tree, sub);
             break;
+
+        case PRINT:
+        case PRINTLN:
+            success &= pass2_print(tree, sub);
+            break;
             
         case RETURN:
             if (sub == implicit_main) {
@@ -602,6 +607,7 @@ Component::pass2_litconst(const Token *tree) {
         
     default:
         assert(0 && "invalid constant type");
+        return 0;
     }
 }
 
@@ -940,6 +946,108 @@ bool Component::pass2_do(Token *&tree, Sub *sub) {
     sub->exitContainer();
     
     return success;
+}
+
+bool Component::pass2_print(Token *&tree, Sub *sub) {
+    // (PRINT|PRINTLN (expr expr...))
+    // Each expr becomes its own _GB_print* call
+    bool println = tree->id == PRINTLN;
+    Token *t = tree->child;
+    while (t) {
+        Expression *expr = pass2_expr(t, sub);
+        if (!expr) {
+            return false;
+        }
+
+        char *subname = 0;
+        const Type *ty = expr->getType();
+        if (ty->typeClass() == Type::INTRINSIC) {
+            int iid = static_cast<const IntrinsicType *>(ty)->getIntrinsicId();
+            switch (iid) {
+            case IntrinsicType::BOOL:
+                subname = "_GB_printBool";
+                break;
+            case IntrinsicType::CHAR:
+                subname = "_GB_printChar";
+                break;
+            case IntrinsicType::INT:
+                subname = "_GB_printInt";
+                break;
+            case IntrinsicType::UINT:
+                subname = "_GB_printUint";
+                break;
+            case IntrinsicType::INT64:
+                subname = "_GB_printInt64";
+                break;
+            case IntrinsicType::UINT64:
+                subname = "_GB_printUint64";
+                break;
+            case IntrinsicType::FLOAT:
+            case IntrinsicType::DOUBLE:
+                subname = "_GB_printDouble";
+                break;
+            default:
+                // These should be uncommon enough that we'll just convert them to int.
+                assert(iid == IntrinsicType::SCHAR
+                       || iid == IntrinsicType::WORD
+                       || iid == IntrinsicType::SWORD);
+                implicitConvert(expr, getType("int"), this);
+                subname = "_GB_printInt";
+                break;
+            }
+        } else if (ty->typeClass() == Type::ARRAY) {
+            auto at = static_cast<const ArrayType *>(ty);
+            if (*at->getRefType() != *getType("char")) {
+                printf("don't know how to print type %s\n", ty->getName().c_str());
+                return false;
+            }
+            implicitConvert(expr, getType("char")->getPtrType(), this);
+            subname = "_GB_printStr";
+        } else if (ty->typeClass() == Type::POINTER) {
+            auto pt = static_cast<const PointerType *>(ty);
+            if (*pt->getRefType() == *getType("char")) {
+                subname = "_GB_printStr";
+            } else {
+                switch (sizeof(void *)) {
+                case 4:
+                    subname = "_GB_printUint";
+                    break;
+                case 8:
+                    subname = "_GB_printUint64";
+                    break;
+                default:
+                    assert(false && "not 32 or 64 bit?");
+                    return false;
+                }
+            }
+        } else {
+            printf("don't know how to print type %s\n", ty->getName().c_str());
+            return false;
+        }
+
+        Sub *printSub = getSub(subname);
+        if (!printSub) {
+            printf("can't find subroutine %s\n", subname);
+            return false;
+        }
+
+        CallExpr *ce = new CallExpr(printSub);
+        ce->pushExpr(expr, this);
+        sub->addStatement(new CallStmt(ce));
+
+        t = t->next;
+    }
+
+    if (println) {
+        Sub *printlnSub = getSub("_GB_printLine");
+        if (!printlnSub) {
+            printf("can't find subroutine _GB_printLine\n");
+            return false;
+        }
+        sub->addStatement(new CallStmt(new CallExpr(printlnSub)));
+    }
+
+    return true;
 }
 
 const Type *
