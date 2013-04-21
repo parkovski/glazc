@@ -5,6 +5,7 @@
 #include "scanner.h"
 #include "parser.h"
 #include "ast.h"
+#include "glaz.h"
 
 #include <llvm/Module.h>
 #include <llvm/Function.h>
@@ -58,12 +59,12 @@ extern "C" {
 static int global_argc;
 static char **global_argv;
 
-__declspec(dllexport)
+EXPORTFUNC
 int GetArgCount() {
     return global_argc;
 }
 
-__declspec(dllexport)
+EXPORTFUNC
 char *GetArg(int n) {
     if (n >= global_argc) {
         return "";
