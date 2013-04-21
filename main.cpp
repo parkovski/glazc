@@ -80,6 +80,8 @@ int main(int argc, char *argv[]) {
     const char *filename = 0;
     EmitterMode emitter = ASM;
     bool dump_llvm = false;
+    bool prompt_filename = false;
+    string inp_filename;
     
     for (int i = 1; i < argc; i++) {
         int len = strlen(argv[i]);
@@ -90,6 +92,8 @@ int main(int argc, char *argv[]) {
                 return 0;
             } else if (!strcmp(argv[i], "-ll")) {
                 dump_llvm = true;
+            } else if (!strcmp(argv[i], "-getfn")) {
+                prompt_filename = true;
             } else if (len > 6 && !memcmp(argv[i], "-emit:", 6)) {
                 if (len == 15 && !memcmp(&argv[i][6], "component", 9))
                     emitter = COMPONENT;
@@ -118,11 +122,18 @@ int main(int argc, char *argv[]) {
                 argv[i] << endl;
         }
     }
+
+    if (prompt_filename) {
+        cout << "input filename: ";
+        cin >> inp_filename;
+        if (!inp_filename.empty()) {
+            filename = inp_filename.c_str();
+        }
+    }
     
     if (!filename) {
-        //cout << "error: required input file" << endl;
-        //return 1;
-        filename = "test.gb";
+        cout << "error: required input file" << endl;
+        return 1;
     }
         
     Parser *parser = Parser::create(filename);
@@ -162,7 +173,6 @@ int main(int argc, char *argv[]) {
             llvm::ExecutionEngine *engine = llvm::EngineBuilder(mod).create();
             
             llvm::PassManager pm;
-            //pm.add(new llvm::TargetData(*engine->getTargetData()));
             pm.add(llvm::createBasicAliasAnalysisPass());
             pm.add(llvm::createConstantPropagationPass());
             pm.add(llvm::createFunctionInliningPass());
@@ -182,7 +192,9 @@ int main(int argc, char *argv[]) {
             void (*pmain)() = (void(*)())(fptr);
             
             // alright, here it goes...
-            cout << "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n";
+            if (dump_llvm) {
+                cout << "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n";
+            }
             pmain();
             
             // have to flush stdout for now.
@@ -197,8 +209,6 @@ int main(int argc, char *argv[]) {
     delete parser;
     
     globalCleanup();
-
-    system("pause");
     
     return 0;
 }

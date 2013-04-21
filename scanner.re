@@ -140,6 +140,8 @@ DC  = (D+ E) | (D* "." D+ E?) | (D+ "." D* E?);
     'let'           { RET(LET); }
     
     'usecomponent'  { RET(USECOMPONENT); }
+	'__internal'    { RET(INTERNAL); }
+	'__endinternal' { RET(ENDINTERNAL); }
     
     "_"
     {

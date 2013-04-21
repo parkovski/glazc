@@ -704,10 +704,14 @@ Component::pass2_structmember(const Token *tree, Sub *sub) {
 
 Expression *
 Component::pass2_arrayindex(Var *var, const Token *tree, Sub *sub) {
-    unsigned nr_of_bounds =
-        static_cast<const ArrayType *>(var->getType())->getNumBounds();
-    Expression **bounds = new Expression *[nr_of_bounds];
     Token *bound = tree->child;
+    unsigned nr_of_bounds = 0;
+    while (bound) {
+        ++nr_of_bounds;
+        bound = bound->next;
+    }
+    Expression **bounds = new Expression *[nr_of_bounds];
+    bound = tree->child;
     for (unsigned i = 0; i < nr_of_bounds; ++i) {
         bounds[i] = pass2_expr(bound, sub);
         bound = bound->next;

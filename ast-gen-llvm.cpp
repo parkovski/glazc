@@ -662,7 +662,7 @@ LitConstant::getLlvmAddr(llvm::LLVMContext &context,
     
     // String constants have type array of char.
     if (type->typeClass() != Type::ARRAY) {
-        assert(0 && "can't take address of integer constant");
+        assert(0 && "can't take address of numerical constant");
     }
     
     if (!cached_gv) {
@@ -907,7 +907,7 @@ StructAccessor::getLlvmAddr(llvm::LLVMContext &context,
 std::vector<llvm::Value *>
 callAssist(llvm::LLVMContext &context, llvm::Module &mod,
         llvm::BasicBlock *block, const SubType *subty,
-        std::vector<Expression *> exprlist) {
+        const std::vector<Expression *> &exprlist) {
                     
     assert(!(((subty->getFlags() & SubType::VA_IMPLICIT_LEN) != 0) &&
         ((subty->getFlags() & SubType::VA_IMPLICIT_NULL) != 0)) &&
@@ -962,8 +962,17 @@ CallExpr::getLlvmValue(llvm::LLVMContext &context,
     std::vector<llvm::Value *> args =
         callAssist(context, mod, block, subty, exprlist);
         
-    return llvm::CallInst::Create(sub->getLlvmAddr(context, mod, block),
-        args, "", block);
+    auto callinst = llvm::CallInst::Create(
+        sub->getLlvmAddr(context, mod, block), args, "", block);
+#if defined(_WIN32) && !defined(_WIN64)
+    if (subty->getFlags() & SubType::CDECL)
+        callinst->setCallingConv(llvm::CallingConv::C);
+    else
+        callinst->setCallingConv(llvm::CallingConv::X86_StdCall);
+#else
+    callinst->setCallingConv(llvm::CallingConv::C);
+#endif
+    return callinst;
 }
 
 llvm::Value *
@@ -973,8 +982,17 @@ PtrCallExpr::getLlvmValue(llvm::LLVMContext &context,
     std::vector<llvm::Value *> args =
         callAssist(context, mod, block, subty, exprlist);
         
-    return llvm::CallInst::Create(var->getLlvmValue(context, mod, block),
-        args, "", block);
+    auto callinst = llvm::CallInst::Create(
+        var->getLlvmValue(context, mod, block), args, "", block);
+#if defined(_WIN32) && !defined(_WIN64)
+    if (subty->getFlags() & SubType::CDECL)
+        callinst->setCallingConv(llvm::CallingConv::C);
+    else
+        callinst->setCallingConv(llvm::CallingConv::X86_StdCall);
+#else
+    callinst->setCallingConv(llvm::CallingConv::C);
+#endif
+    return callinst;
 }
 
 bool Label::genLlvm(llvm::LLVMContext &context, llvm::Module &mod,
@@ -1266,12 +1284,11 @@ Sub::getLlvmFunction(llvm::LLVMContext &context, llvm::Module *mod) {
         static_cast<llvm::FunctionType *>(
             this->type->getLlvmType(context, *mod)
         );
+
+    const SubType *subty = static_cast<const SubType *>(type);
         
     std::string &gen_name = (flags & HAS_ALIAS) ? aliasname : name;
     
-    //function = static_cast<llvm::Function *>(
-    //  mod->getOrInsertFunction(gen_name, fnty)
-    //);
     llvm::Function *fn = mod->getFunction(gen_name);
     function = fn;
     
@@ -1279,6 +1296,9 @@ Sub::getLlvmFunction(llvm::LLVMContext &context, llvm::Module *mod) {
         llvm::GlobalValue::InternalLinkage;
     
     if (gen_name == "_GB_main")
+        linkage = llvm::GlobalValue::ExternalLinkage;
+
+    if (!(flags & IMPLEMENTED))
         linkage = llvm::GlobalValue::ExternalLinkage;
     
     if (!fn) {
@@ -1291,8 +1311,17 @@ Sub::getLlvmFunction(llvm::LLVMContext &context, llvm::Module *mod) {
         function = fn;
     }
     
-    //if ((this->type->getFlags() & SubType::CDECL) == SubType::CDECL)
+    // 32-bit windows has a jillion calling conventions
+    // most other platforms have one standardized one
+    // for the most part.
+#if defined(_WIN32) && !defined(_WIN64)
+    if (subty->getFlags() & (SubType::CDECL | SubType::VARARGS))
         fn->setCallingConv(llvm::CallingConv::C);
+    else
+        fn->setCallingConv(llvm::CallingConv::X86_StdCall);
+#else
+    fn->setCallingConv(llvm::CallingConv::C);
+#endif
     
     // If it's just a declare, don't generate any code for it.
     if ((flags & IMPLEMENTED) == 0)

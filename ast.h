@@ -38,7 +38,6 @@ class Component {
 public:
     typedef std::unordered_map<std::string, Var *> var_map;
     
-    // This uses shared_ptrs because not all types will be stored here.
     typedef std::unordered_map<std::string, const Type *> type_map;
         
 private:
@@ -105,7 +104,6 @@ public:
     ~Component();
     
     static Component *fromTree(Token *tree, bool del = true);
-    //void toXml(std::ostream &file) const;
     
     Sub *getMain() { return implicit_main; }
     
@@ -146,7 +144,6 @@ public:
     Type() : ptrtome(0) { }
     virtual ~Type() { }
     
-    //virtual void toXml(std::ostream &file, int indent) const { }
     // Returns which class of type it is (I know, awkward wording). E.g.,
     // intrinsic, structure, pointer, array, etc.
     virtual int typeClass() const = 0;
@@ -182,7 +179,6 @@ private:
 public:
     explicit IntrinsicType(IntrinsicId which);
     
-    //virtual void toXml(std::ostream &file, int indent) const;
     virtual int typeClass() const { return INTRINSIC; }
     virtual bool operator==(const Type &rhs) const;
     virtual std::string getName() const { return name; }
@@ -222,7 +218,6 @@ public:
     
     virtual ~Struct();
     
-    //virtual void toXml(std::ostream &file, int indent) const;
     virtual int typeClass() const { return STRUCT; }
     virtual bool operator==(const Type &rhs) const;
     virtual std::string getName() const { return name; }
@@ -250,7 +245,6 @@ class PointerType : public Type {
         cached(0) { }
     
 public:
-    //virtual void toXml(std::ostream &file, int indent) const;
     virtual int typeClass() const { return POINTER; }
     virtual bool operator==(const Type &rhs) const;
     virtual std::string getName() const { return name; }
@@ -316,7 +310,6 @@ public:
         flags(0),
         cached(0) { }
     
-    //virtual void toXml(std::ostream &file, int indent) const;
     virtual int typeClass() const { return SUBTYPE; }
     virtual bool operator==(const Type &rhs) const;
     
@@ -366,7 +359,6 @@ public:
     explicit UnaryOp(int op, Expression *ex) :
         Expression(ex->getType()), op(op), child(ex) { }
     
-    //virtual void toXml(std::ostream &file, int indent) const;
     virtual int exprClass() const { return UNARYOP; }
     
     virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
@@ -412,7 +404,6 @@ public:
             "types MUST be equal for binary op");
     }
     
-    //virtual void toXml(std::ostream &file, int indent) const;
     virtual int exprClass() const { return BINARYOP; }
     
     virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
@@ -484,7 +475,6 @@ public:
     
     std::string getstr() const { return str; }
     
-    //virtual void toXml(std::ostream &file, int indent) const;
     virtual int exprClass() const { return LITCONST; }
     
     virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
@@ -503,9 +493,7 @@ public:
         Expression(type), name(name), initializer() { }
     explicit Var(const std::string &name, Expression *init) :
         Expression(init->getType()), name(name), initializer(init) { }
-    
-    //virtual void toXml(std::ostream &file, int indent) const;
-    
+        
     std::string getName() const { return name; }
     void setName(const std::string &newname) { name = newname; }
     
@@ -673,7 +661,6 @@ public:
     explicit InOrderNode() : next(0) { }
     virtual ~InOrderNode() = 0;
     
-    //virtual void toXml(std::ostream &file, int indent) const { };
     virtual bool genLlvm(llvm::LLVMContext &context,
         llvm::Module &mod, llvm::BasicBlock *&block) const = 0;
 };
@@ -683,9 +670,7 @@ class Label : public InOrderNode {
     
 public:
     explicit Label(const std::string &name) : name(name) { }
-    
-    //virtual void toXml(std::ostream &file, int indent) const;
-    
+        
     std::string getName() const { return name; }
     
     virtual bool genLlvm(llvm::LLVMContext &context,
@@ -707,9 +692,7 @@ class Goto : public InOrderNode {
     
 public:
     explicit Goto(Label *label) : label(label) { }
-    
-    //virtual void toXml(std::ostream &file, int indent) const;
-    
+        
     virtual bool genLlvm(llvm::LLVMContext &context,
         llvm::Module &mod, llvm::BasicBlock *&block) const;
 };
@@ -721,9 +704,7 @@ class Assign : public InOrderNode {
 public:
     explicit Assign(Expression *left, Expression *right) :
         left(left), right(right) { }
-        
-    //virtual void toXml(std::ostream &file, int indent) const;
-    
+            
     virtual bool genLlvm(llvm::LLVMContext &context,
         llvm::Module &mod, llvm::BasicBlock *&block) const;
 };
@@ -918,7 +899,6 @@ public:
         
     ~Sub();
     
-    //virtual void toXml(std::ostream &file, int indent) const;
     virtual int exprClass() const { return Expression::SUB; }
     
     int getFlags() const { return flags; }

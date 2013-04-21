@@ -385,7 +385,7 @@ bool Component::pass1_type(Token *tree) {
 bool Component::addSubOrDeclare(Token *tree, Sub *&me) {
     bool is_declare;
     bool type_only = false;
-    int typeflags = 0;
+    bool isCdecl = false;
     int declflags;
     char *libp = 0;
     
@@ -408,7 +408,7 @@ bool Component::addSubOrDeclare(Token *tree, Sub *&me) {
                 declflags |= Sub::COMMAND;
                 break;
             case '!':
-                typeflags |= SubType::CDECL;
+                isCdecl = true;
                 break;
             case '#':
                 type_only = true;
@@ -437,27 +437,22 @@ bool Component::addSubOrDeclare(Token *tree, Sub *&me) {
     std::string name(idnode->text);
         
     SubType *type = 0;
-        
-    if (type_only) {
-        type = new SubType("{" + name + "}");
-    } else {
+
+    if (!type_only) {
         me = getSub(name);
         
         if (!me) {
             me = insertSub(name, declflags);
-            
+
             type = new SubType("{" + name + "}");
-                    
+            
             // Use the size_t constructor of string to chop off the ending '"'.
             if (libp)
                 me->setLib(std::string(libp, strlen(libp)-1));
         } else {
-            // HACKY!!! :(
             type = const_cast<SubType *>(
                 static_cast<const SubType *>(me->getType())
             );
-            assert(type && "sub must have a type!");
-            
             if (is_declare) {
                 printf("error: SUB '%s' declared twice (line %d)\n",
                     idnode->text, idnode->loc.first_line);
@@ -568,6 +563,9 @@ bool Component::addSubOrDeclare(Token *tree, Sub *&me) {
     }
     
     // This will fail anyways if the type already exists.
+    if (isCdecl) {
+        type->addFlags(SubType::CDECL);
+    }
     insertType(type->getName(), type);
     
     if (type_only) {
@@ -691,7 +689,7 @@ Component::Component() : llvm_context(0), module(0) {
     
     Type *char_type = new IntrinsicType(IntrinsicType::CHAR);
     types["char"] = char_type;
-    types["char*"] = types["c_string"] = char_type->getPtrType();
+    types["char*"] = char_type->getPtrType();
     
     insertType("schar", new IntrinsicType(IntrinsicType::SCHAR));
     insertType("word", new IntrinsicType(IntrinsicType::WORD));
@@ -709,6 +707,7 @@ Component::Component() : llvm_context(0), module(0) {
     
     SubType *main_type = new SubType("{_GB_main}");
     main_type->setReturnType(void_type);
+    main_type->addFlags(SubType::CDECL);
     implicit_main = new Sub(
         "_GB_main",
         main_type,
@@ -718,6 +717,16 @@ Component::Component() : llvm_context(0), module(0) {
 }
 
 Component::~Component() {
+    // If there are any duplicate names, we end up deleting stuff twice
+    // which is bad. Either don't allow duplicates or figure out a way
+    // around this...
+    types.erase("pointer");
+    for (auto it = types.begin(); it != types.end(); ++it) {
+        delete it->second;
+    }
+    for (auto it = vars.begin(); it != vars.end(); ++it) {
+        delete it->second;
+    }
 }
 
 Sub *Component::getSub(const std::string &name) const {
@@ -744,7 +753,7 @@ const Type *Component::getType(const std::string &name) const {
         types.find(boost::to_lower_copy(name));
     
     if (entry == types.end())
-        return 0; // shared_ptr equivalent of null
+        return 0;
     return entry->second;
 }
 

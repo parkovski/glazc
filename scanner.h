@@ -83,8 +83,10 @@ enum {
     DELETE,
     PRINT,
     LET,
-    USECOMPONENT,
     WAITUNTIL,
+    USECOMPONENT,
+    INTERNAL,
+    ENDINTERNAL,
     
     /* non-keyword node header values */
     PRINTLN,

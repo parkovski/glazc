@@ -39,7 +39,6 @@ public:
     virtual ~Expression() { }
     
     const Type *getType() const { return type; }
-    //virtual void toXml(std::ostream &file, int indent) const { }
     virtual int exprClass() const = 0;
     
     // If isConst returns true, then fold is required to return a constant
