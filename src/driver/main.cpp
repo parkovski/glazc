@@ -1,12 +1,15 @@
 #include <iostream>
 #include <fstream>
-#include <string.h>
+#include <cstring>
+#include <memory>
+#include <direct.h>
 
-#include "scanner.h"
-#include "parser.h"
-#include "ast.h"
-#include "glaz.h"
+#include "frontend/scanner.h"
+#include "frontend/parser.h"
+#include "frontend/ast.h"
+#include "frontend/glaz.h"
 
+/*
 #include <llvm/Module.h>
 #include <llvm/Function.h>
 #include <llvm/PassManager.h>
@@ -21,6 +24,7 @@
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/DataLayout.h>
+*/
 
 using namespace std;
 using namespace glaz;
@@ -30,7 +34,6 @@ namespace glaz {
 extern void globalCleanup();
 }
 
-extern void llvmtest();
 void printtree(Token*);
 void printnode(Token*);
 
@@ -125,6 +128,9 @@ int main(int argc, char *argv[]) {
     }
 
     if (prompt_filename) {
+        char *cwd = _getcwd(nullptr, 0);
+        cout << "current directory: " << cwd << "\n";
+        free(cwd);
         cout << "input filename: ";
         cin >> inp_filename;
         if (!inp_filename.empty()) {
@@ -150,14 +156,14 @@ int main(int argc, char *argv[]) {
     } else {
         Token *node = tree;
         
-        if (emitter == PARSETREE) {
+        //if (emitter == PARSETREE) {
             while (node) {
                 printnode(node);
                 cout << endl;
                 node = node->next;
             }
-        }
-        
+        //}
+        /*
         Component *c = Component::fromTree(tree, true);
         
         if (c) {
@@ -204,7 +210,7 @@ int main(int argc, char *argv[]) {
             delete engine;
         }
         
-        delete c;
+        delete c;*/
     }
         
     delete parser;

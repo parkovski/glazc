@@ -840,8 +840,8 @@ Token *Parser::typeName() {
 // of arguments to be passed before the list, or a NULL (0) to be passed as
 // a terminator.
 Token *Parser::subParamList(Token *&tail) {
-    Token *head = 0;
-    Token *tailtmp;
+    Token *head = nullptr;
+    Token *tailtmp = nullptr;
     
     while (true) {
         if (current == LEN) {
