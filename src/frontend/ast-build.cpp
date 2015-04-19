@@ -678,7 +678,7 @@ bool Component::paramListsEqual(Token *&tree, Sub *sub) const {
     return rettype && *rettype == *other_rettype;
 }
 
-Component::Component() : llvm_context(0), module(0) {
+Component::Component() {
     // Add all the intrinsic types
     // Manually insert the void type. Its name in the lookup table should not
     // be a valid identifier.

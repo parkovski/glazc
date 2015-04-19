@@ -11,8 +11,8 @@ Sub::~Sub() {
     }
 }
 
-bool Sub::addParamOrLocal(const std::string &name, Var *var) {
-    std::string lower = boost::to_lower_copy(name);
+bool Sub::addParamOrLocal(const std::string &varName, Var *var) {
+    std::string lower = boost::to_lower_copy(varName);
     var_map::const_iterator entry = vars.find(lower);
     if (entry != vars.end())
         return false;
@@ -22,8 +22,8 @@ bool Sub::addParamOrLocal(const std::string &name, Var *var) {
     return true;
 }
 
-Var *Sub::getVar(const std::string &name) const {
-    std::string lower = boost::to_lower_copy(name);
+Var *Sub::getVar(const std::string &varName) const {
+    std::string lower = boost::to_lower_copy(varName);
     
     // Is it in locals/params?
     var_map::const_iterator entry = vars.find(lower);
@@ -59,19 +59,19 @@ bool Sub::setVarName(const std::string &oldname, const std::string &newname) {
     return true;
 }
 
-bool Sub::addLabel(const std::string &name) {
-    std::string lower = boost::to_lower_copy(name);
+bool Sub::addLabel(const std::string &labelName) {
+    std::string lower = boost::to_lower_copy(labelName);
     label_map::const_iterator entry = labels.find(lower);
     if (entry != labels.end())
         return false;
     
-    labels[lower] = new Label(name);
+    labels[lower] = new Label(labelName);
     return true;
 }
 
-Label *Sub::getLabel(const std::string &name) const {
+Label *Sub::getLabel(const std::string &labelName) const {
     label_map::const_iterator entry =
-        labels.find(boost::to_lower_copy(name));
+        labels.find(boost::to_lower_copy(labelName));
     if (entry == labels.end())
         return 0;
     

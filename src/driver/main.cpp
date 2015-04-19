@@ -163,9 +163,10 @@ int main(int argc, char *argv[]) {
                 node = node->next;
             }
         //}
+
+        //Component *c = Component::fromTree(tree, true);
+        //delete c;
         /*
-        Component *c = Component::fromTree(tree, true);
-        
         if (c) {
             llvm::Module *mod = c->getLlvmModule();
             

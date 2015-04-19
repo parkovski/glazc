@@ -7,6 +7,45 @@ declare "!",strcmp(s:char*, o:char*),int
 declare "!",memcmp(a:pointer, b:pointer, n:uint64),int
 declare "!",strlen(s:char*),uint64
 
+' Implement the print subroutines
+' This is currently required to use the print statement,
+' but eventually should be part of the standard library.
+sub _GB_printBool(value:bool)
+  if value
+    print "true",
+  else
+    print "false",
+  endif
+return
+
+sub _GB_printChar(value:char)
+  printf "%c", value
+return
+
+sub _GB_printInt(value:int)
+  printf "%d", value
+return
+
+sub _GB_printUint(value:uint)
+  printf "%u", value
+return
+
+sub _GB_printInt64(value:int64)
+  print "not implemented!"
+return
+
+sub _GB_printUint64(value:uint64)
+  print "not implemented!"
+return
+
+sub _GB_printStr(value:char*)
+  printf "%s", value
+return
+
+sub _GB_printLine
+  printf "%c", 10
+return
+
 '' -----------------------------------------------------------
 
 '' variables
@@ -41,11 +80,11 @@ setupmessages
 '' main program
 
 do
-    msg ""
+    print
     if map[myy, myx] & dark
-        msg "it's so dark you wonder if light even exists."
+        print "it's so dark you wonder if light even exists."
     else
-        msg messages[myy, myx]
+        print messages[myy, myx]
     endif
     ask
     process
@@ -56,10 +95,6 @@ until quitting
 end
 
 '' ----------------------------------------------------------
-
-sub msg(s:char*)
-    printf "%s%c", s, 10
-return
 
 sub getln
     def c:int
@@ -73,7 +108,7 @@ sub getln
 return
 
 sub ask
-    printf "> "
+    print "> ",
     getln
 return
 
@@ -103,11 +138,11 @@ sub process
     else if memcmp(commandbuf, "take ", 5) = 0
         tryget &commandbuf[5]
     else
-        msg "i didn't understand that command. try 'help' for a list of commands."
+        print "i didn't understand that command. try 'help' for a list of commands."
     endif
     
     if map[myy, myx] & pitofspikes
-        msg "you got impaled on a pit of spikes so you kinda lose."
+        print "you got impaled on a pit of spikes so you kinda lose."
         quitting = true
     endif
 return
@@ -135,11 +170,11 @@ sub look
 return
 
 sub lmsg(dir:char*, m:char*)
-    printf "%s %s%c", dir, m, 10
+    print dir, " ", m
 return
 
 sub lmsginv(dir:char*)
-    printf "it appears you can't go %s.%c", dir, 10
+    print "it appears you can't go ", dir, "."
 return
 
 sub getthingnr(thing:char*),int
@@ -165,53 +200,53 @@ sub tryuse(thing:char*)
     if inv & nr
         if nr = lantern
             if spot & dark
-                msg "aw yeah dawg it's so bright here now!"
+                print "aw yeah dawg it's so bright here now!"
                 map[myy, myx] = spot - dark
                 inv = inv - lantern
             else
-                msg "that wouldn't do you any good!"
+                print "that wouldn't do you any good!"
             endif
         
         else if nr = cake
             if spot & hungryguy
                 messages[myy, myx] = _
                     "there's a guy here that's not really hungry anymore."
-                msg "that guy is so happy he gave you some cash!"
+                print "that guy is so happy he gave you some cash!"
                 inv = inv - cake + money
             else
-                msg "that wouldn't do you any good!"
+                print "that wouldn't do you any good!"
             endif
             
         else if nr = money
             if spot & store
                 messages[myy, myx] = _
                     "there's a store here! they're currently out of everything."
-                msg "you got some awesome looking tissues for blowing yo nose!"
+                print "you got some awesome looking tissues for blowing yo nose!"
                 inv = inv - money + tissues
             else
-                msg "that wouldn't do you any good!"
+                print "that wouldn't do you any good!"
             endif
             
         else if nr = tissues
             if spot & cryingguy
                 messages[myy, myx] = _
                     "there's a happy guy with some tissues here."
-                msg "he's so happy that he can blow his nose, he gave you your keys back!"
+                print "he's so happy that he can blow his nose, he gave you your keys back!"
                 inv = inv - tissues + key
             else
-                msg "that wouldn't do you any good!"
+                print "that wouldn't do you any good!"
             endif
             
         else if nr = key
             if spot & house
-                msg "you got home! yay!"
+                print "you got home! yay!"
                 quitting = true
             else
-                msg "that wouldn't do you any good!"
+                print "that wouldn't do you any good!"
             endif
         endif
     else
-        msg "you don't have that!"
+        print "you don't have that!"
     endif
 return
 
@@ -222,28 +257,28 @@ sub tryget(thing:char*)
         inv = inv | nr
         map[myy, myx] = map[myy, myx] - nr
         messages[myy, myx] = "there's nothing here anymore cause you took it."
-        msg "oh you totally got it"
+        print "oh you totally got it"
     else
-        msg "it's not here!"
+        print "it's not here!"
     endif
 return
 
 sub help
-    msg "try north/south/east/west, look, get/take <item>, use <item>"
+    print "try north/south/east/west, look, get/take <item>, use <item>"
 return
 
 sub inventory
     if inv = 0
-        msg "your inventory is empty!"
+        print "your inventory is empty!"
         return
     endif
     
-    msg "you have:"
-    if inv & lantern then msg("- lantern")
-    if inv & cake then msg("- cake")
-    if inv & money then msg("- money")
-    if inv & tissues then msg("- tissues")
-    if inv & key then msg("- key")
+    print "you have:"
+    if inv & lantern then print("- lantern")
+    if inv & cake then print("- cake")
+    if inv & money then print("- money")
+    if inv & tissues then print("- tissues")
+    if inv & key then print("- key")
 return
 
 ''-----------
@@ -307,7 +342,7 @@ return
 
 sub gonorth
     if myy = 0
-        msg "you can't go north!"
+        print "you can't go north!"
         return
     endif
     myy = myy - 1
@@ -315,7 +350,7 @@ return
 
 sub gosouth
     if myy = ymax
-        msg "you can't go south!"
+        print "you can't go south!"
         return
     endif
     myy = myy + 1
@@ -323,7 +358,7 @@ return
 
 sub gowest
     if myx = 0
-        msg "you can't go west!"
+        print "you can't go west!"
         return
     endif
     myx = myx - 1
@@ -331,7 +366,7 @@ return
 
 sub goeast
     if myx = xmax
-        msg "you can't go east!"
+        print "you can't go east!"
         return
     endif
     myx = myx + 1

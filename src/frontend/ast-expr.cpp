@@ -16,25 +16,25 @@ AddrOf::AddrOf(Expression *expr) :
         expr(expr) { }
 
 LitConstant::LitConstant(signed long long ll, const Type *ty) :
-        Expression(ty), cached(0), cached_gv(0) {
+        Expression(ty) {
     
     value.ll = ll;
 }
 
 LitConstant::LitConstant(unsigned long long ull, const Type *ty) :
-        Expression(ty), cached(0), cached_gv(0) {
+        Expression(ty) {
     
     value.ull = ull;
 }
 
 LitConstant::LitConstant(double d, const Type *ty) :
-        Expression(ty), cached(0), cached_gv(0) {
+        Expression(ty) {
     
     value.d = d;
 }
 
 LitConstant::LitConstant(const std::string &str, const Type *ty) :
-        Expression(ty), str(str), cached(0), cached_gv(0) {
+        Expression(ty), str(str) {
         
     // Unescape the string (remove quotes and embedded double quotes)
     unsigned i = 1, j = 0;

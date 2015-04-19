@@ -3,13 +3,6 @@
 
 #include <cassert>
 
-namespace llvm {
-    class LLVMContext;
-    class Module;
-    class BasicBlock;
-    class Value;
-}
-
 namespace glaz {
 
 class Type;
@@ -45,15 +38,6 @@ public:
     // expression of the same type.
     virtual bool isConst() { return false; }
     virtual Expression *fold() { return 0; }
-    
-    virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const = 0;
-    virtual llvm::Value *getLlvmAddr(llvm::LLVMContext &context,
-            llvm::Module &mod, llvm::BasicBlock *block) const {
-        
-        assert(0 && "can't take address of unknown expression type");
-        return 0;
-    }
 };
 
 } // namespace glaz

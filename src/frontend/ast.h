@@ -8,21 +8,6 @@
 #include <string>
 #include <vector>
 
-namespace llvm {
-    class LLVMContext;
-    class Module;
-    class Constant;
-    class Function;
-    class GlobalVariable;
-    class AllocaInst;
-    class Type;
-    class StructType;
-    class FunctionType;
-    class Value;
-    class BasicBlock;
-    class LoadInst;
-}
-
 namespace glaz {
 
 struct Token;
@@ -49,9 +34,6 @@ private:
     
     Sub *implicit_main;
     
-    mutable llvm::LLVMContext *llvm_context;
-    mutable llvm::Module *module;
-
     // Helpers for constructing from a tree
     bool pass1(Token *tree);
     bool pass1_in_control_stmt(Token *&stmt, Sub *sub, bool &foundRet);
@@ -115,10 +97,6 @@ public:
     
     Var *getVar(const std::string &name) const;
     bool insertVar(const std::string &name, Var *var);
-    
-    llvm::Module *getLlvmModule() const;
-    // Not valid to call this until getLlvmModule has been called.
-    llvm::LLVMContext &getLlvmContext() const { return *llvm_context; }
 };
 
 
@@ -141,7 +119,7 @@ public:
         STRING
     };
     
-    Type() : ptrtome(0) { }
+    Type() : ptrtome(nullptr) { }
     virtual ~Type() { }
     
     // Returns which class of type it is (I know, awkward wording). E.g.,
@@ -152,9 +130,6 @@ public:
     bool operator!=(const Type &rhs) const { return !(*this == rhs); }
     bool isVoid() const; // For easy test of void or not
     const PointerType *getPtrType() const;
-    
-    virtual llvm::Type *getLlvmType(llvm::LLVMContext &context,
-        llvm::Module &mod) const = 0;
 };
 
 // This might be better called NumericType.
@@ -174,8 +149,6 @@ private:
     IntrinsicId which;
     const std::string name;
     
-    mutable llvm::Type *cached;
-    
 public:
     explicit IntrinsicType(IntrinsicId which);
     
@@ -183,14 +156,11 @@ public:
     virtual bool operator==(const Type &rhs) const;
     virtual std::string getName() const { return name; }
     IntrinsicId getIntrinsicId() const { return which; }
-    
-    virtual llvm::Type *getLlvmType(llvm::LLVMContext &context,
-        llvm::Module &mod) const;
 };
 
 class Struct : public Type {
 public:
-    typedef std::vector<std::pair<std::string, Var *> > var_list;
+    typedef std::vector<std::pair<std::string, Var *>> var_list;
     
 private:
     const std::string name;
@@ -199,22 +169,18 @@ private:
     var_list vars;
     bool is_implemented; // for forward references
     
-    mutable llvm::StructType *cached;
-    
 public:
     explicit Struct(const std::string &name) :
         Type(),
         name(name),
         alignment(0),
-        is_implemented(false),
-        cached(0) { }
+        is_implemented(false) { }
         
     explicit Struct(const std::string &name, unsigned align) :
         Type(),
         name(name),
         alignment(align),
-        is_implemented(false),
-        cached(0) { }
+        is_implemented(false) { }
     
     virtual ~Struct();
     
@@ -224,25 +190,19 @@ public:
     
     void setImplFlag() { is_implemented = true; }
     bool isImplemented() const { return is_implemented; }
-    bool addVar(const std::string &name, Var *var);
-    
-    virtual llvm::Type *getLlvmType(llvm::LLVMContext &context,
-        llvm::Module &mod) const;
+    bool addVar(const std::string &varName, Var *var);
 };
 
 class PointerType : public Type {
     const Type *referenced;
     const std::string name;
     
-    mutable llvm::Type *cached;
-    
     friend const PointerType *Type::getPtrType() const;
     
     explicit PointerType(const Type *ty) :
         Type(),
         referenced(ty),
-        name(ty->isVoid() ? "pointer" : ty->getName() + "*"),
-        cached(0) { }
+        name(ty->isVoid() ? "pointer" : ty->getName() + "*") { }
     
 public:
     virtual int typeClass() const { return POINTER; }
@@ -250,16 +210,11 @@ public:
     virtual std::string getName() const { return name; }
     
     const Type *getRefType() const { return referenced; }
-    
-    virtual llvm::Type *getLlvmType(llvm::LLVMContext &context,
-        llvm::Module &mod) const;
 };
 
 class ArrayType : public Type {
     const Type *referenced;
     const std::string name;
-    
-    mutable llvm::Type *cached;
     
     std::vector<unsigned> bounds;
     unsigned sd_bounds;
@@ -276,9 +231,6 @@ public:
     
     unsigned getNumBounds() const { return bounds.size(); }
     unsigned getBound(unsigned n) const { return bounds[n]; }
-    
-    virtual llvm::Type *getLlvmType(llvm::LLVMContext &context,
-        llvm::Module &mod) const;
 };
 
 class SubType : public Type {
@@ -299,16 +251,13 @@ private:
     mutable std::string name;
     int flags;
     
-    mutable llvm::Type *cached;
-    
 public:
     explicit SubType(const std::string &name) :
         Type(),
-        rtype(0),
+        rtype(nullptr),
         param_types(),
         name(name),
-        flags(0),
-        cached(0) { }
+        flags(0) { }
     
     virtual int typeClass() const { return SUBTYPE; }
     virtual bool operator==(const Type &rhs) const;
@@ -320,8 +269,8 @@ public:
     int getFlags() const { return flags; }
     void addFlags(int fl) { flags |= fl; }
     
-    void setReturnType(const Type *rtype) {
-        this->rtype = rtype;
+    void setReturnType(const Type *newRtype) {
+        this->rtype = newRtype;
     }
     const Type *getReturnType() const { return rtype; }
     
@@ -336,9 +285,6 @@ public:
     }
     int paramSize() const { return param_types.size(); }
     const Type *getParam(int i) const { return param_types[i]; }
-    
-    virtual llvm::Type *getLlvmType(llvm::LLVMContext &context,
-        llvm::Module &mod) const;
 };
 
 
@@ -360,9 +306,6 @@ public:
         Expression(ex->getType()), op(op), child(ex) { }
     
     virtual int exprClass() const { return UNARYOP; }
-    
-    virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
 };
 
 // Tries to implicitly convert expr to type. If it succeeds, expr refers to the
@@ -405,9 +348,6 @@ public:
     }
     
     virtual int exprClass() const { return BINARYOP; }
-    
-    virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
 };
 
 class BinaryCmpOp : public BinaryOp {
@@ -416,9 +356,6 @@ public:
     explicit BinaryCmpOp(int op, Expression *left,
         Expression *right, const Type *type) :
         BinaryOp(op, left, right, type) { }
-        
-    virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
 };
 
 class Deref : public Expression {
@@ -428,11 +365,6 @@ public:
     explicit Deref(Expression *expr);
     
     virtual int exprClass() const { return DEREF; }
-    
-    virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
-    virtual llvm::Value *getLlvmAddr(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
 };
 
 class AddrOf : public Expression {
@@ -442,11 +374,6 @@ public:
     explicit AddrOf(Expression *expr);
     
     virtual int exprClass() const { return ADDROF; }
-    
-    virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
-    virtual llvm::Value *getLlvmAddr(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
 };
 
 class LitConstant : public Expression {
@@ -461,9 +388,6 @@ class LitConstant : public Expression {
     } value;
     std::string str;
     
-    mutable llvm::Value *cached;
-    mutable llvm::GlobalVariable *cached_gv;
-    
 public:
     explicit LitConstant(signed long long ll, const Type *ty);
     explicit LitConstant(unsigned long long ull, const Type *ty);
@@ -476,11 +400,6 @@ public:
     std::string getstr() const { return str; }
     
     virtual int exprClass() const { return LITCONST; }
-    
-    virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
-    virtual llvm::Value *getLlvmAddr(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
 };
 
 class Var : public Expression {
@@ -496,71 +415,39 @@ public:
         
     std::string getName() const { return name; }
     void setName(const std::string &newname) { name = newname; }
-    
-    virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
-    virtual void genInitializer(llvm::LLVMContext &context, llvm::Module &mod,
-        llvm::BasicBlock *block) { }
 };
 
 class GlobalVar : public Var {
-    mutable llvm::GlobalVariable *cached_gv;
-    
 public:
     explicit GlobalVar(const std::string &name, const Type *type) :
-        Var(name, type), cached_gv(0) { }
+        Var(name, type) { }
     explicit GlobalVar(const std::string &name, Expression *init) :
-        Var(name, init), cached_gv(0) { }
+        Var(name, init) { }
         
     virtual int exprClass() const { return GLOBALVAR; }
-    
-    virtual llvm::Value *getLlvmAddr(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
 };
 
 class LocalVar : public Var {
-    mutable llvm::AllocaInst *cached_alloca;
-    
 public:
     explicit LocalVar(const std::string &name, const Type *type) :
-        Var(name, type), cached_alloca(0) { }
+        Var(name, type) { }
     explicit LocalVar(const std::string &name, Expression *init) :
-        Var(name, init), cached_alloca(0) { }
+        Var(name, init) { }
         
     virtual int exprClass() const { return LOCALVAR; }
-    
-    virtual llvm::Value *getLlvmAddr(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
-    void createLocal(llvm::LLVMContext &context, llvm::Module &mod,
-        llvm::BasicBlock *block);
-        
-    virtual void genInitializer(llvm::LLVMContext &context, llvm::Module &mod,
-        llvm::BasicBlock *block);
 };
 
 class Param : public Var {
-    llvm::AllocaInst *cached_alloca;
-    llvm::Value *cached_val;
-    
 public:
     explicit Param(const std::string &name, const Type *type) :
-        Var(name, type), cached_alloca(0), cached_val(0) { }
+        Var(name, type) { }
         
     virtual int exprClass() const { return PARAM; }
-    
-    virtual llvm::Value *getLlvmAddr(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
-    void bindParam(llvm::Value *val, llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block);
-        
-    virtual void genInitializer(llvm::LLVMContext &context, llvm::Module &mod,
-        llvm::BasicBlock *block);
 };
 
 class Indexable : public Expression {
 public:
     Indexable(const Type *ty) : Expression(ty) { }
-    virtual llvm::Value *getGepIndex() const { return 0; } // = 0;
 };
 
 static const Type *getRefType(Var *var) {
@@ -569,7 +456,7 @@ static const Type *getRefType(Var *var) {
     if (var->getType()->typeClass() == Type::ARRAY)
         return static_cast<const ArrayType *>(var->getType())->getRefType();
     assert(0 && "can't get referring type for non-pointer or array type!");
-    return 0;
+    return nullptr;
 }
 
 class ArrayIndexer : public Indexable {
@@ -587,13 +474,6 @@ public:
     virtual ~ArrayIndexer();
     
     virtual int exprClass() const { return ARRAYINDEX; }
-    
-    virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
-    virtual llvm::Value *getLlvmAddr(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
-    
-    //virtual llvm::Value *getGepIndex() const;
 };
 
 class StructAccessor : public Indexable {
@@ -607,13 +487,6 @@ public:
         index(index) { }
         
     virtual int exprClass() const { return STRUCTACCESS; }
-    
-    virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
-    virtual llvm::Value *getLlvmAddr(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
-        
-    //virtual llvm::Value *getGepIndex() const;
 };
 
 class CallExpr : public Expression {
@@ -633,9 +506,6 @@ public:
         
     bool pushExpr(Expression *expr, Component *c);
     bool hasEnoughParams() const;
-    
-    virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
 };
 
 class PtrCallExpr : public CallExpr {
@@ -645,9 +515,6 @@ public:
         CallExpr(static_cast<const SubType *>(
             static_cast<const PointerType *>(var->getType())->getRefType()
         )), var(var) { }
-    
-    virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
 };
 
 
@@ -660,9 +527,6 @@ public:
     
     explicit InOrderNode() : next(0) { }
     virtual ~InOrderNode() = 0;
-    
-    virtual bool genLlvm(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *&block) const = 0;
 };
 
 class Label : public InOrderNode {
@@ -672,19 +536,12 @@ public:
     explicit Label(const std::string &name) : name(name) { }
         
     std::string getName() const { return name; }
-    
-    virtual bool genLlvm(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *&block) const;
-    const llvm::BasicBlock *getLlvmBasicBlock() const;
 };
 
 class CallStmt : public InOrderNode {
 public:
     CallExpr *ce;
     explicit CallStmt(CallExpr *expr) : ce(expr) { }
-    
-    virtual bool genLlvm(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *&block) const;
 };
 
 class Goto : public InOrderNode {
@@ -692,9 +549,6 @@ class Goto : public InOrderNode {
     
 public:
     explicit Goto(Label *label) : label(label) { }
-        
-    virtual bool genLlvm(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *&block) const;
 };
 
 class Assign : public InOrderNode {
@@ -704,27 +558,21 @@ class Assign : public InOrderNode {
 public:
     explicit Assign(Expression *left, Expression *right) :
         left(left), right(right) { }
-            
-    virtual bool genLlvm(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *&block) const;
 };
 
 class Return : public InOrderNode {
     Expression *expr;
     
 public:
-    explicit Return() : expr() { }
+    explicit Return() : expr(nullptr) { }
     explicit Return(Expression *expr) : expr(expr) { }
-    
-    virtual bool genLlvm(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *&block) const;
 };
 
 class Container {
     Container *parent;
     
 public:
-    explicit Container() : parent(0) { }
+    explicit Container() : parent(nullptr) { }
     explicit Container(Container *p) : parent(p) { }
     virtual ~Container() { }
     
@@ -743,17 +591,14 @@ class IfBlock : public Container, public InOrderNode {
     
 public:
     explicit IfBlock(Container *parent, Expression *expr) :
-        Container(parent), InOrderNode(), expr(expr), first(0),
-        else_first(0), in_else(false), nested(0) { }
+        Container(parent), InOrderNode(), expr(expr), first(nullptr),
+        else_first(nullptr), in_else(false), nested(nullptr) { }
     virtual ~IfBlock();
     
     virtual void addStatement(InOrderNode *node);
     bool enterElse();
     bool enterElseIf(IfBlock *elseif);
     IfBlock *getCurrentElseIf() { return nested ? nested : this; }
-    
-    virtual bool genLlvm(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *&block) const;
 };
 
 class SelectBlock;
@@ -767,9 +612,9 @@ public:
     CaseBlock *next;
     
     explicit CaseBlock(Container *parent) :
-        Container(parent), expr(), first(0), next(0) { }
+        Container(parent), expr(), first(nullptr), next(nullptr) { }
     explicit CaseBlock(Container *parent, Expression *expr) :
-        Container(parent), expr(expr), first(0), next(0) { }
+        Container(parent), expr(expr), first(nullptr), next(nullptr) { }
     ~CaseBlock();
     
     virtual void addStatement(InOrderNode *node);
@@ -784,26 +629,15 @@ class SelectBlock : public Container, public InOrderNode {
     
     int nr_of_cases;
     
-    // If all the cases had constant expressions, we can generate an LLVM
-    // switch instruction. Otherwise, we have to generate branches like an if
-    // block with a bunch of elseifs.
-    bool genLlvmSwitch(llvm::LLVMContext &context, llvm::Module &mod,
-        llvm::BasicBlock *&block) const;
-    bool genLlvmIf(llvm::LLVMContext &context, llvm::Module &mod,
-        llvm::BasicBlock *&block) const;
-    
 public:
     explicit SelectBlock(Container *parent, Expression *expr) :
-        Container(parent), InOrderNode(), expr(expr), first_case(0),
-        last_case(0), has_nonconst_case(false), nr_of_cases(0) { }
+        Container(parent), InOrderNode(), expr(expr), first_case(nullptr),
+        last_case(nullptr), has_nonconst_case(false), nr_of_cases(0) { }
     virtual ~SelectBlock();
     
     virtual void addStatement(InOrderNode *node);
     bool enterCase(CaseBlock *c);
     bool enterDefault(CaseBlock *c);
-    
-    virtual bool genLlvm(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *&block) const;
 };
 
 class ForBlock : public Container, public InOrderNode {
@@ -823,13 +657,10 @@ public:
             Expression *step,
             int cmpop) :
         Container(parent), InOrderNode(), var(var), init(init), final(final),
-        step(step), cmpop(cmpop), first(0) { }
+        step(step), cmpop(cmpop), first(nullptr) { }
     virtual ~ForBlock();
     
     virtual void addStatement(InOrderNode *node);
-    
-    virtual bool genLlvm(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *&block) const;
 };
 
 class WhileBlock : public Container, public InOrderNode {
@@ -838,13 +669,10 @@ class WhileBlock : public Container, public InOrderNode {
     
 public:
     explicit WhileBlock(Container *parent, Expression *expr) :
-        Container(parent), InOrderNode(), expr(expr), first(0) { }
+        Container(parent), InOrderNode(), expr(expr), first(nullptr) { }
     virtual ~WhileBlock();
     
     virtual void addStatement(InOrderNode *node);
-    
-    virtual bool genLlvm(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *&block) const;
 };
 
 class DoBlock : public Container, public InOrderNode {
@@ -853,13 +681,10 @@ class DoBlock : public Container, public InOrderNode {
     
 public:
     explicit DoBlock(Container *parent, Expression *expr) :
-        Container(parent), InOrderNode(), expr(expr), first(0) { }
+        Container(parent), InOrderNode(), expr(expr), first(nullptr) { }
     virtual ~DoBlock();
     
     virtual void addStatement(InOrderNode *node);
-    
-    virtual bool genLlvm(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *&block) const;
 };
 
 class Sub : public Var, public Container {
@@ -883,8 +708,6 @@ private:
     Container *current_container;
     int flags;
     
-    llvm::Constant *function;
-    
 public:
     enum {
         IMPLEMENTED = 0x1,
@@ -894,8 +717,7 @@ public:
     };
     
     explicit Sub(const std::string &name, const Type *type, int flags) :
-        Var(name, type), first(0), current_container(0), flags(flags),
-        function(0) { }
+        Var(name, type), first(nullptr), current_container(nullptr), flags(flags) { }
         
     ~Sub();
     
@@ -912,26 +734,26 @@ public:
     
     void setType(const Type *newtype) { type = newtype; }
     
-    bool addParamOrLocal(const std::string &name, Var *var);
+    bool addParamOrLocal(const std::string &varName, Var *var);
     
     // returns false if there is already a param with that name.
-    bool addParam(const std::string &name, Param *param) {
-        return addParamOrLocal(name, param);
+    bool addParam(const std::string &varName, Param *param) {
+        return addParamOrLocal(varName, param);
     }
     
     // returns false if there is already a param or local with that name.
-    bool addLocal(const std::string &name, LocalVar *local) {
-        return addParamOrLocal(name, local);
+    bool addLocal(const std::string &varName, LocalVar *local) {
+        return addParamOrLocal(varName, local);
     }
     
     // gets a var from params or locals
-    Var *getVar(const std::string &name) const;
+    Var *getVar(const std::string &varName) const;
     Var *getVar(unsigned int index) const;
     
     bool setVarName(const std::string &oldname, const std::string &newname);
         
-    bool addLabel(const std::string &name);
-    Label *getLabel(const std::string &name) const;
+    bool addLabel(const std::string &labelName);
+    Label *getLabel(const std::string &labelName) const;
 
     Container *getCurrentContainer() { return current_container; }
     // Requires current container == c->parent
@@ -939,13 +761,6 @@ public:
     bool exitContainer();
     
     virtual void addStatement(InOrderNode *stmt);
-    
-    virtual llvm::Value *getLlvmValue(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
-    virtual llvm::Value *getLlvmAddr(llvm::LLVMContext &context,
-        llvm::Module &mod, llvm::BasicBlock *block) const;
-    llvm::Constant *getLlvmFunction(llvm::LLVMContext &context,
-        llvm::Module *mod);
 };
 
 } // namespace glaz

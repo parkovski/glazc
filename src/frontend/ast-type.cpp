@@ -29,8 +29,7 @@ namespace {
 IntrinsicType::IntrinsicType(IntrinsicId which) :
 	Type(),
 	which(which),
-	name(intrinsic_names[which]),
-	cached(0) { }
+	name(intrinsic_names[which]) { }
 
 bool IntrinsicType::operator==(const Type &rhs) const {
 	if (rhs.typeClass() != INTRINSIC)
@@ -79,8 +78,8 @@ bool Struct::operator==(const Type &rhs) const {
 	return true;
 }
 
-bool Struct::addVar(const std::string &name, Var *var) {
-	std::string lower = boost::to_lower_copy(name);
+bool Struct::addVar(const std::string &varName, Var *var) {
+	std::string lower = boost::to_lower_copy(varName);
 	for (var_list::const_iterator iter = vars.begin(); iter != vars.end();
 			++iter) {
 	
@@ -125,7 +124,6 @@ ArrayType::ArrayType(const Type *ty, unsigned bounds) :
 	Type(),
 	referenced(ty),
 	name(makeArrayName(ty, bounds)),
-	cached(0),
 	bounds(1, bounds),
 	sd_bounds(bounds) { }
 
@@ -133,7 +131,6 @@ ArrayType::ArrayType(const Type *ty, const std::vector<unsigned> &bounds) :
 		Type(),
 		referenced(ty),
 		name(makeArrayName(ty, bounds)),
-		cached(0),
 		bounds(bounds) {
 			
 	sd_bounds = bounds[0];
