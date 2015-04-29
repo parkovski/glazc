@@ -277,3 +277,9 @@ bool CallExpr::hasEnoughParams() const {
     return expridx >= subty->paramSize();
 }
 
+ArrayIndexer::~ArrayIndexer() {
+}
+
+StructAccessor::~StructAccessor() {
+}
+

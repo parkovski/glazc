@@ -45,6 +45,9 @@
     <ClCompile Include="..\..\..\src\frontend\scanner.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\frontend\ast-tostring.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\frontend\ast-conv.h">

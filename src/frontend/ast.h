@@ -97,6 +97,8 @@ public:
     
     Var *getVar(const std::string &name) const;
     bool insertVar(const std::string &name, Var *var);
+
+    std::string toString() const;
 };
 
 
@@ -130,6 +132,8 @@ public:
     bool operator!=(const Type &rhs) const { return !(*this == rhs); }
     bool isVoid() const; // For easy test of void or not
     const PointerType *getPtrType() const;
+
+    virtual std::string toString() const = 0;
 };
 
 // This might be better called NumericType.
@@ -156,6 +160,8 @@ public:
     virtual bool operator==(const Type &rhs) const;
     virtual std::string getName() const { return name; }
     IntrinsicId getIntrinsicId() const { return which; }
+
+    virtual std::string toString() const override;
 };
 
 class Struct : public Type {
@@ -191,6 +197,8 @@ public:
     void setImplFlag() { is_implemented = true; }
     bool isImplemented() const { return is_implemented; }
     bool addVar(const std::string &varName, Var *var);
+
+    virtual std::string toString() const override;
 };
 
 class PointerType : public Type {
@@ -210,6 +218,8 @@ public:
     virtual std::string getName() const { return name; }
     
     const Type *getRefType() const { return referenced; }
+
+    virtual std::string toString() const override;
 };
 
 class ArrayType : public Type {
@@ -231,6 +241,8 @@ public:
     
     unsigned getNumBounds() const { return bounds.size(); }
     unsigned getBound(unsigned n) const { return bounds[n]; }
+
+    virtual std::string toString() const override;
 };
 
 class SubType : public Type {
@@ -285,6 +297,8 @@ public:
     }
     int paramSize() const { return param_types.size(); }
     const Type *getParam(int i) const { return param_types[i]; }
+
+    virtual std::string toString() const override;
 };
 
 
@@ -306,6 +320,8 @@ public:
         Expression(ex->getType()), op(op), child(ex) { }
     
     virtual int exprClass() const { return UNARYOP; }
+
+    virtual std::string toString() const override;
 };
 
 // Tries to implicitly convert expr to type. If it succeeds, expr refers to the
@@ -348,6 +364,8 @@ public:
     }
     
     virtual int exprClass() const { return BINARYOP; }
+
+    virtual std::string toString() const override;
 };
 
 class BinaryCmpOp : public BinaryOp {
@@ -365,6 +383,8 @@ public:
     explicit Deref(Expression *expr);
     
     virtual int exprClass() const { return DEREF; }
+
+    virtual std::string toString() const override;
 };
 
 class AddrOf : public Expression {
@@ -374,6 +394,8 @@ public:
     explicit AddrOf(Expression *expr);
     
     virtual int exprClass() const { return ADDROF; }
+
+    virtual std::string toString() const override;
 };
 
 class LitConstant : public Expression {
@@ -400,6 +422,8 @@ public:
     std::string getstr() const { return str; }
     
     virtual int exprClass() const { return LITCONST; }
+
+    virtual std::string toString() const override;
 };
 
 class Var : public Expression {
@@ -415,6 +439,8 @@ public:
         
     std::string getName() const { return name; }
     void setName(const std::string &newname) { name = newname; }
+
+    virtual std::string toString() const override;
 };
 
 class GlobalVar : public Var {
@@ -474,6 +500,8 @@ public:
     virtual ~ArrayIndexer();
     
     virtual int exprClass() const { return ARRAYINDEX; }
+
+    virtual std::string toString() const override;
 };
 
 class StructAccessor : public Indexable {
@@ -485,8 +513,11 @@ public:
         Indexable(getRefType(var)),
         var(var),
         index(index) { }
+    virtual ~StructAccessor();
         
     virtual int exprClass() const { return STRUCTACCESS; }
+
+    virtual std::string toString() const override;
 };
 
 class CallExpr : public Expression {
@@ -506,6 +537,8 @@ public:
         
     bool pushExpr(Expression *expr, Component *c);
     bool hasEnoughParams() const;
+
+    virtual std::string toString() const override;
 };
 
 class PtrCallExpr : public CallExpr {
@@ -515,6 +548,8 @@ public:
         CallExpr(static_cast<const SubType *>(
             static_cast<const PointerType *>(var->getType())->getRefType()
         )), var(var) { }
+
+    virtual std::string toString() const override;
 };
 
 
@@ -527,6 +562,8 @@ public:
     
     explicit InOrderNode() : next(0) { }
     virtual ~InOrderNode() = 0;
+
+    virtual std::string toString() const = 0;
 };
 
 class Label : public InOrderNode {
@@ -536,12 +573,16 @@ public:
     explicit Label(const std::string &name) : name(name) { }
         
     std::string getName() const { return name; }
+
+    virtual std::string toString() const override;
 };
 
 class CallStmt : public InOrderNode {
 public:
     CallExpr *ce;
     explicit CallStmt(CallExpr *expr) : ce(expr) { }
+
+    virtual std::string toString() const override;
 };
 
 class Goto : public InOrderNode {
@@ -549,6 +590,8 @@ class Goto : public InOrderNode {
     
 public:
     explicit Goto(Label *label) : label(label) { }
+
+    virtual std::string toString() const override;
 };
 
 class Assign : public InOrderNode {
@@ -558,6 +601,8 @@ class Assign : public InOrderNode {
 public:
     explicit Assign(Expression *left, Expression *right) :
         left(left), right(right) { }
+
+    virtual std::string toString() const override;
 };
 
 class Return : public InOrderNode {
@@ -566,6 +611,8 @@ class Return : public InOrderNode {
 public:
     explicit Return() : expr(nullptr) { }
     explicit Return(Expression *expr) : expr(expr) { }
+
+    virtual std::string toString() const override;
 };
 
 class Container {
@@ -578,6 +625,8 @@ public:
     
     virtual void addStatement(InOrderNode *node) = 0;
     Container *getParent() { return parent; }
+
+    virtual std::string toString() const = 0;
 };
 
 class IfBlock : public Container, public InOrderNode {
@@ -599,6 +648,8 @@ public:
     bool enterElse();
     bool enterElseIf(IfBlock *elseif);
     IfBlock *getCurrentElseIf() { return nested ? nested : this; }
+
+    virtual std::string toString() const override;
 };
 
 class SelectBlock;
@@ -618,6 +669,8 @@ public:
     ~CaseBlock();
     
     virtual void addStatement(InOrderNode *node);
+
+    virtual std::string toString() const override;
 };
 
 class SelectBlock : public Container, public InOrderNode {
@@ -638,6 +691,8 @@ public:
     virtual void addStatement(InOrderNode *node);
     bool enterCase(CaseBlock *c);
     bool enterDefault(CaseBlock *c);
+
+    virtual std::string toString() const override;
 };
 
 class ForBlock : public Container, public InOrderNode {
@@ -661,6 +716,8 @@ public:
     virtual ~ForBlock();
     
     virtual void addStatement(InOrderNode *node);
+
+    virtual std::string toString() const override;
 };
 
 class WhileBlock : public Container, public InOrderNode {
@@ -673,6 +730,8 @@ public:
     virtual ~WhileBlock();
     
     virtual void addStatement(InOrderNode *node);
+
+    virtual std::string toString() const override;
 };
 
 class DoBlock : public Container, public InOrderNode {
@@ -685,6 +744,8 @@ public:
     virtual ~DoBlock();
     
     virtual void addStatement(InOrderNode *node);
+
+    virtual std::string toString() const override;
 };
 
 class Sub : public Var, public Container {
@@ -761,6 +822,8 @@ public:
     bool exitContainer();
     
     virtual void addStatement(InOrderNode *stmt);
+
+    virtual std::string toString() const override;
 };
 
 } // namespace glaz

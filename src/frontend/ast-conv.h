@@ -19,6 +19,8 @@ public:
         Expression(convto), expr(expr) { }
     
     virtual int exprClass() const { return CONVERSION; }
+
+    virtual std::string toString() const override;
 };
 
 // Used to add or remove the sign to an integral type. Is essentially a no-op,
@@ -32,6 +34,8 @@ public:
         Expression(convto), expr(expr) { }
     
     virtual int exprClass() const { return CONVERSION; }
+
+    virtual std::string toString() const override;
 };
 
 // Used to implement either a sign-extend or zero-extend operation, depending
@@ -44,6 +48,8 @@ public:
         Expression(convto), expr(expr) { }
         
     virtual int exprClass() const { return CONVERSION; }
+
+    virtual std::string toString() const override;
 };
 
 // Truncates the value of the inner expression. Results could be undesirable
@@ -56,6 +62,8 @@ public:
         Expression(convto), expr(expr) { }
         
     virtual int exprClass() const { return CONVERSION; }
+
+    virtual std::string toString() const override;
 };
 
 // Converts a signed or unsigned integer to floating point.
@@ -67,6 +75,8 @@ public:
         Expression(convto), expr(expr) { }
         
     virtual int exprClass() const { return CONVERSION; }
+
+    virtual std::string toString() const override;
 };
 
 // Converts a floating point number to a signed or unsigned integer. Loss of
@@ -79,6 +89,8 @@ public:
         Expression(convto), expr(expr) { }
         
     virtual int exprClass() const { return CONVERSION; }
+
+    virtual std::string toString() const override;
 };
 
 } // namespace glaz

@@ -2,6 +2,7 @@
 #define AST_EXPR_H
 
 #include <cassert>
+#include <string>
 
 namespace glaz {
 
@@ -38,6 +39,8 @@ public:
     // expression of the same type.
     virtual bool isConst() { return false; }
     virtual Expression *fold() { return 0; }
+
+    virtual std::string toString() const = 0;
 };
 
 } // namespace glaz

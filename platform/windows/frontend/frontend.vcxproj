@@ -91,6 +91,7 @@
     <ClCompile Include="..\..\..\src\frontend\ast-expr.cpp" />
     <ClCompile Include="..\..\..\src\frontend\ast-pass2.cpp" />
     <ClCompile Include="..\..\..\src\frontend\ast-sub.cpp" />
+    <ClCompile Include="..\..\..\src\frontend\ast-tostring.cpp" />
     <ClCompile Include="..\..\..\src\frontend\ast-type.cpp" />
     <ClCompile Include="..\..\..\src\frontend\diag.cpp" />
     <ClCompile Include="..\..\..\src\frontend\misc.cpp" />

@@ -43,17 +43,17 @@ void printhelp() {
         "valid options:\n"
         "-h\t\t\tprint help\n"
         "-emit:<option>\t\tset emitter. valid options are: parsetree, ast,\n"
-        "\t\t\tcomponent, llvm, asm\n"
+        "\t\t\tcomponent, exe\n"
         "-component:<filename>\timport a component into this program\n"
         ;
 }
 
 enum EmitterMode {
-    PARSETREE,
-    AST,
-    COMPONENT,
-    LLVM,
-    ASM
+    RUN,       // Runs the program with the LLVM JIT.
+    PARSETREE, // Prints the parse tree (lisp style) and quits.
+    AST,       // Prints the AST and quits.
+    COMPONENT, // Outputs a component that can be used in other programs.
+    EXE        // Output a fully compiled program.
 };
 
 // Exports to get the command line arguments from a GB program.
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
     global_argv = argv;
 
     const char *filename = 0;
-    EmitterMode emitter = ASM;
+    EmitterMode emitter = RUN;
     bool dump_llvm = false;
     bool prompt_filename = false;
     string inp_filename;
@@ -101,14 +101,12 @@ int main(int argc, char *argv[]) {
             } else if (len > 6 && !memcmp(argv[i], "-emit:", 6)) {
                 if (len == 15 && !memcmp(&argv[i][6], "component", 9))
                     emitter = COMPONENT;
-                else if (len == 10 && !memcmp(&argv[i][6], "llvm", 4))
-                    emitter = LLVM;
                 else if (len == 15 && !memcmp(&argv[i][6], "parsetree", 9))
                     emitter = PARSETREE;
                 else if (len == 9 && !memcmp(&argv[i][6], "ast", 3))
                     emitter = AST;
-                else if (len == 9 && !memcmp(&argv[i][6], "asm", 3))
-                    emitter = ASM;
+                else if (len == 9 && !memcmp(&argv[i][6], "exe", 3))
+                    emitter = EXE;
                 else
                     cout << "invalid argument to -emit: `" <<
                         &argv[i][6] << "'\n";
@@ -128,9 +126,8 @@ int main(int argc, char *argv[]) {
     }
 
     if (prompt_filename) {
-        char *cwd = _getcwd(nullptr, 0);
-        cout << "current directory: " << cwd << "\n";
-        free(cwd);
+        std::unique_ptr<char, decltype(std::free)*> cwd(_getcwd(nullptr, 0), std::free);
+        cout << "current directory: " << cwd.get() << "\n";
         cout << "input filename: ";
         cin >> inp_filename;
         if (!inp_filename.empty()) {
@@ -143,7 +140,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
         
-    Parser *parser = Parser::create(filename);
+    std::unique_ptr<Parser> parser(Parser::create(filename));
     if (!parser) {
         cout << "couldn't create parser for " << filename << "\n";
         return 1;
@@ -154,15 +151,22 @@ int main(int argc, char *argv[]) {
     if (parser->failed()) {
         token_free_all(tree);
     } else {
-        Token *node = tree;
         
-        //if (emitter == PARSETREE) {
+        if (emitter == PARSETREE) {
+            Token *node = tree;
             while (node) {
                 printnode(node);
                 cout << endl;
                 node = node->next;
             }
-        //}
+        }
+        else if (emitter == AST) {
+            std::unique_ptr<Component> c(Component::fromTree(tree, true));
+            cout << c->toString() << endl;
+        }
+        else {
+            cout << "sorry this emitter isn't currently supported!" << endl;
+        }
 
         //Component *c = Component::fromTree(tree, true);
         //delete c;
@@ -214,8 +218,6 @@ int main(int argc, char *argv[]) {
         delete c;*/
     }
         
-    delete parser;
-    
     globalCleanup();
     
     return 0;
