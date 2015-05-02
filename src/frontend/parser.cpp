@@ -841,8 +841,8 @@ Token *Parser::typeName() {
 // Parses parameters in a SUB/DECLARE statement.
 // Param = ID {'[' bound {',' bound}*} ':'|AS ID {BYVAL|BYREF}
 // Last param may be "..." => var-args, like C.
-// It may also be either "LEN, ..." or "..., 0" which cause either the number
-// of arguments to be passed before the list, or a NULL (0) to be passed as
+// It may also be either "LEN, ..." or "..., null" which cause either the number
+// of arguments to be passed before the list, or a null to be passed as
 // a terminator.
 Token *Parser::subParamList(Token *&tail) {
     Token *head = nullptr;
@@ -881,20 +881,18 @@ Token *Parser::subParamList(Token *&tail) {
                 tailtmp = tailtmp->next = gettok();
             
             if (scan() == ',') {
-                // Is it ", 0" for a NULL terminated list?
-                if (getLookahead() == INTCONST) {
+                // Is it ", null" for a NULL terminated list?
+                if (getLookahead() == INTRINSICID) {
                     scan();
-                    // Only allow the integer constant '0'.
-                    if (*scanner->tok == '0' &&
-                            scanner->tok+1 == scanner->cur) {
-                    
+                    // Only allow the intrinsic "null".
+                    if (std::string(scanner->tok, scanner->cur) == "null") {
                         tailtmp->child = gettok();
                         scan();
                         break;
                     }
                     
                     // Otherwise, report an error.
-                    error("expected '0' for null-terminated var-args");
+                    error("expected 'null' for null-terminated var-args");
                     if (head)
                         token_free_all(head);
                     return 0;
