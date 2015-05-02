@@ -49,7 +49,6 @@ return
 '' -----------------------------------------------------------
 
 '' variables
-def false,true:bool : true=1
 def quitting:bool
 def chararray[256]:char
 def commandbuf:char* : commandbuf = &chararray[0]

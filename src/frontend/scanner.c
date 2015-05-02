@@ -198,11 +198,11 @@ yy6:
 yy7:
 #line 153 "scanner.re"
 	{
-        if (commands_get_from_range(
+        tokenid = commands_get_from_range(
             (const char *)s->tok,
-            (const char *)cursor)) {
-            
-            RET(COMMAND)
+            (const char *)cursor);
+        if (tokenid) {
+            goto retpoint;
         } else {
             RET(ID)
         }

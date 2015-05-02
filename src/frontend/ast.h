@@ -18,17 +18,21 @@ class Var;
 class Type;
 class SubType;
 class Expression;
+class LitConstant;
 
 class Component {
 public:
     typedef std::unordered_map<std::string, Var *> var_map;
     
     typedef std::unordered_map<std::string, const Type *> type_map;
+
+    typedef std::unordered_map<std::string, LitConstant *> intrinsic_id_map;
         
 private:
     // This includes all vars, subs, consts, setids, etc.
     var_map vars;
     type_map types;
+    intrinsic_id_map intrinsic_ids;
     // For convenience, to avoid lookups.
     const Type *void_type;
     const SubType *void_sub_type;
@@ -408,14 +412,21 @@ class LitConstant : public Expression {
         unsigned long long ull;
         float f;
         double d;
+        void *ptr;
     } value;
     std::string str;
+
+    explicit LitConstant(const Type *ty);
     
 public:
     explicit LitConstant(signed long long ll, const Type *ty);
     explicit LitConstant(unsigned long long ull, const Type *ty);
     explicit LitConstant(double d, const Type *ty);
     explicit LitConstant(const std::string &str, const Type *ty);
+
+    static LitConstant *getBool(const Type *boolType, bool value);
+
+    static LitConstant *getNull(const Type *voidPtrType);
     
     long long getLL() const { return value.ll; }
     double getDouble() const { return value.d; }

@@ -153,11 +153,11 @@ DC  = (D+ E) | (D* "." D+ E?) | (D+ "." D* E?);
     
     L (L|D|"@")* "$"?
     {
-        if (commands_get_from_range(
+		tokenid = commands_get_from_range(
             (const char *)s->tok,
-            (const char *)cursor)) {
-            
-            RET(COMMAND)
+            (const char *)cursor);
+        if (tokenid) {
+            goto retpoint;
         } else {
             RET(ID)
         }

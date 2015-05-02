@@ -1,0 +1,21 @@
+declare "!", printf(format:char*, ...), int
+
+sub _GB_printStr(s:char*)
+  printf "%s", s
+return
+
+sub _GB_printLine
+  printf "%c", 10
+return
+
+sub _GB_printBool(b:bool)
+  if b then print "true", else print "false",
+return
+
+print true
+print false
+if "test" = null
+  print "oh no, the test string is null!"
+else
+  print "good, the test string is not null."
+endif

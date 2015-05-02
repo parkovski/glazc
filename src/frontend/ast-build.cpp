@@ -683,7 +683,8 @@ Component::Component() {
     void_type = new IntrinsicType(IntrinsicType::VOID);
     types["#void#"] = void_type;
     
-    insertType("bool", new IntrinsicType(IntrinsicType::BOOL));
+    Type *bool_type = new IntrinsicType(IntrinsicType::BOOL);
+    insertType("bool", bool_type);
     
     Type *char_type = new IntrinsicType(IntrinsicType::CHAR);
     types["char"] = char_type;
@@ -706,6 +707,10 @@ Component::Component() {
     void_sub_type = new SubType("{}");
     const_cast<SubType *>(void_sub_type)->setReturnType(void_type);
     types["{}"] = void_sub_type;
+
+    intrinsic_ids["true"] = LitConstant::getBool(bool_type, true);
+    intrinsic_ids["false"] = LitConstant::getBool(bool_type, false);
+    intrinsic_ids["null"] = LitConstant::getNull(ptr_type);
     
     SubType *main_type = new SubType("{_GB_main}");
     main_type->setReturnType(void_type);

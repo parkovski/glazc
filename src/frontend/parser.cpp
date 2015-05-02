@@ -15,6 +15,10 @@ Parser::~Parser() {
 Parser *Parser::create(const char *filename) {
     Scanner *s = scanner_init(filename);
     if (!s) return 0;
+    // TODO: the commands functionality won't work with multiple parsers
+    commands_put("true", INTRINSICID);
+    commands_put("false", INTRINSICID);
+    commands_put("null", INTRINSICID);
     return new Parser(s, filename, new Diagnostics());
 }
 
@@ -1125,7 +1129,7 @@ Token *Parser::declareStmt() {
     
     // If there was a '+', add it to the dictionary of commands
     if (command)
-        commands_put(token->text, 1);
+        commands_put(token->text, COMMAND);
     
     // ALIAS ID|STRINGCONST|COMMAND
     if (scan() == ALIAS) {

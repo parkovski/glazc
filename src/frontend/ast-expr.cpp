@@ -5,36 +5,39 @@
 
 using namespace glaz;
 
-Deref::Deref(Expression *expr) :
-        Expression(static_cast<const PointerType *>(
-            expr->getType())->getRefType()
-        ),
+Deref::Deref(Expression *expr)
+    : Expression(static_cast<const PointerType *>(
+        expr->getType())->getRefType()
+      ),
+      expr(expr) { }
+
+AddrOf::AddrOf(Expression *expr)
+    : Expression(expr->getType()->getPtrType()),
         expr(expr) { }
 
-AddrOf::AddrOf(Expression *expr) :
-        Expression(expr->getType()->getPtrType()),
-        expr(expr) { }
+LitConstant::LitConstant(const Type *ty)
+    : Expression(ty) { }
 
-LitConstant::LitConstant(signed long long ll, const Type *ty) :
-        Expression(ty) {
+LitConstant::LitConstant(signed long long ll, const Type *ty)
+    : Expression(ty) {
     
     value.ll = ll;
 }
 
-LitConstant::LitConstant(unsigned long long ull, const Type *ty) :
-        Expression(ty) {
+LitConstant::LitConstant(unsigned long long ull, const Type *ty)
+    : Expression(ty) {
     
     value.ull = ull;
 }
 
-LitConstant::LitConstant(double d, const Type *ty) :
-        Expression(ty) {
+LitConstant::LitConstant(double d, const Type *ty)
+    : Expression(ty) {
     
     value.d = d;
 }
 
-LitConstant::LitConstant(const std::string &str, const Type *ty) :
-        Expression(ty), str(str) {
+LitConstant::LitConstant(const std::string &str, const Type *ty)
+    : Expression(ty), str(str) {
         
     // Unescape the string (remove quotes and embedded double quotes)
     unsigned i = 1, j = 0;
@@ -45,6 +48,18 @@ LitConstant::LitConstant(const std::string &str, const Type *ty) :
         ++i;
     }
     this->str.resize(j);
+}
+
+LitConstant *LitConstant::getBool(const Type *boolType, bool value) {
+    auto boolConst = new LitConstant(boolType);
+    boolConst->value.b = value;
+    return boolConst;
+}
+
+LitConstant *LitConstant::getNull(const Type *voidPtrType) {
+    auto nullConst = new LitConstant(voidPtrType);
+    nullConst->value.ptr = nullptr;
+    return nullConst;
 }
 
 bool glaz::implicitConvert(Expression *&expr,

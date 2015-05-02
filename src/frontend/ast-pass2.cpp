@@ -488,6 +488,15 @@ Component::pass2_expr(const Token *tree, Sub *sub) {
         }
         return var;
     }
+
+    case INTRINSICID: {
+        auto iidIter = intrinsic_ids.find(tree->text);
+        if (iidIter == intrinsic_ids.end()) {
+            printf("error: invalid intrinsic %s (line %d)\n",
+                tree->text, tree->loc.first_line);
+        }
+        return iidIter->second;
+    }
     
     case TO: {
         Expression *expr =
@@ -495,7 +504,7 @@ Component::pass2_expr(const Token *tree, Sub *sub) {
         const Type *ty = getType(tree->child);
         
         if (!implicitConvert(expr, ty, this))
-            return 0;
+            return nullptr;
             
         return expr;
     }
