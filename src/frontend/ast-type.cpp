@@ -1,8 +1,6 @@
 #include "glaz.h"
 #include "ast.h"
 #include <sstream>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
 
 using namespace glaz;
 
@@ -53,7 +51,7 @@ bool Struct::operator==(const Type &rhs) const {
 	
 	// If they are not implemented yet, depend on names to tell them apart
 	if (!is_implemented || !other.is_implemented) {
-		return boost::iequals(name, other.name);
+		return strEqualIdLookup(name, other.name);
 	}
 	
 	var_list::const_iterator left = vars.begin(),
@@ -79,7 +77,7 @@ bool Struct::operator==(const Type &rhs) const {
 }
 
 bool Struct::addVar(const std::string &varName, Var *var) {
-	std::string lower = boost::to_lower_copy(varName);
+	std::string lower = getIdLookupString(varName);
 	for (var_list::const_iterator iter = vars.begin(); iter != vars.end();
 			++iter) {
 	

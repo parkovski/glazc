@@ -31,6 +31,7 @@ enum {
     
     /* general tokens */
     ID,
+    INTRINSICID,
     COMMAND,
     SYSVAR,
     ICON,

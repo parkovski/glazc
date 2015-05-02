@@ -2,8 +2,6 @@
 #include "ast.h"
 #include "scanner.h"
 #include <stdio.h>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
 
 using namespace glaz;
 
@@ -608,7 +606,7 @@ bool Component::paramListsEqual(Token *&tree, Sub *sub) const {
             iseq = false;
         else if (*type != *var->getType())
             iseq = false;
-        else if (!boost::iequals(var->getName(),
+        else if (!strEqualIdLookup(var->getName(),
                 newname = tree->child->next->text)) {
         
             printf("warning: param names differ from DECLARE to SUB, "
@@ -704,10 +702,15 @@ Component::Component() {
     const Type *ptr_type = void_type->getPtrType();
     types["pointer"] = ptr_type;
     types["#void#*"] = ptr_type;
+
+    void_sub_type = new SubType("{}");
+    const_cast<SubType *>(void_sub_type)->setReturnType(void_type);
+    types["{}"] = void_sub_type;
     
     SubType *main_type = new SubType("{_GB_main}");
     main_type->setReturnType(void_type);
     main_type->addFlags(SubType::CDECL);
+    types["{_gb_main}"] = main_type;
     implicit_main = new Sub(
         "_GB_main",
         main_type,
@@ -730,7 +733,7 @@ Component::~Component() {
 }
 
 Sub *Component::getSub(const std::string &name) const {
-    var_map::const_iterator entry = vars.find(boost::to_lower_copy(name));
+    var_map::const_iterator entry = vars.find(getIdLookupString(name));
         
     if (entry == vars.end())
         return 0;
@@ -740,17 +743,17 @@ Sub *Component::getSub(const std::string &name) const {
 }
 
 Sub *Component::insertSub(const std::string &name, int flags) {
-    std::string lower = boost::to_lower_copy(name);
+    std::string lower = getIdLookupString(name);
     if (vars.find(lower) != vars.end())
         return 0;
-    Sub *sub = new Sub(name, void_type, flags);
+    Sub *sub = new Sub(name, void_sub_type, flags);
     vars[lower] = sub;
     return sub;
 }
 
 const Type *Component::getType(const std::string &name) const {
     type_map::const_iterator entry =
-        types.find(boost::to_lower_copy(name));
+        types.find(getIdLookupString(name));
     
     if (entry == types.end())
         return 0;
@@ -758,7 +761,7 @@ const Type *Component::getType(const std::string &name) const {
 }
 
 bool Component::insertType(const std::string &name, const Type *type) {
-    std::string lower = boost::to_lower_copy(name);
+    std::string lower = getIdLookupString(name);
     if (types.find(lower) != types.end())
         return false;
     types[lower] = type;
@@ -767,7 +770,7 @@ bool Component::insertType(const std::string &name, const Type *type) {
 
 Var *Component::getVar(const std::string &name) const {
     var_map::const_iterator entry =
-        vars.find(boost::to_lower_copy(name));
+        vars.find(getIdLookupString(name));
         
     if (entry == vars.end())
         return 0;
@@ -776,7 +779,7 @@ Var *Component::getVar(const std::string &name) const {
 }
 
 bool Component::insertVar(const std::string &name, Var *var) {
-    std::string lower = boost::to_lower_copy(name);
+    std::string lower = getIdLookupString(name);
     if (vars.find(lower) != vars.end())
         return false;
     vars[lower] = var;

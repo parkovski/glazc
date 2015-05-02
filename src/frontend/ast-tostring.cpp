@@ -7,10 +7,11 @@ using namespace glaz;
 
 std::string Component::toString() const {
     std::stringstream ss;
-    ss << "component:\n";
+    ss << "component 'untitled':\n";
     ss << "types:\n";
     for (auto const typePair : types) {
-        ss << typePair.second->toString() << "\n";
+        ss << "type " << typePair.second->getName() << " = "
+           << typePair.second->toString() << "\n";
     }
     ss << "vars:\n";
     for (auto const varPair : vars) {
@@ -23,7 +24,7 @@ std::string Component::toString() const {
 
 std::string IntrinsicType::toString() const {
     std::stringstream ss;
-    ss << "intrinsic type ";
+    ss << "intrinsic ";
     switch (getIntrinsicId()) {
     case VOID:
         ss << "void";
@@ -65,24 +66,23 @@ std::string IntrinsicType::toString() const {
         ss << "(unknown)";
         break;
     }
-    ss << ";";
     return ss.str();
 }
 
 std::string Struct::toString() const {
-    return "struct " + name + ";";
+    return "struct " + name;
 }
 
 std::string PointerType::toString() const {
-    return "pointer (" + referenced->getName() + ");";
+    return "pointer (" + referenced->getName() + ")";
 }
 
 std::string ArrayType::toString() const {
-    return "array (" + referenced->getName() + ");";
+    return "array (" + referenced->getName() + ")";
 }
 
 std::string SubType::toString() const {
-    return "sub type " + this->getName() + ";";
+    return "sub type " + this->getName();
 }
 
 // Expressions
@@ -140,7 +140,9 @@ std::string LitConstant::toString() const {
 
 // subtypes: LocalVar, GlobalVar, Param
 std::string Var::toString() const {
-    return "var " + this->name + ";";
+    std::stringstream ss;
+    ss << "def " << this->name << " : " << this->type->getName();
+    return ss.str();
 }
 
 std::string ArrayIndexer::toString() const {
@@ -231,5 +233,22 @@ std::string DoBlock::toString() const {
 }
 
 std::string Sub::toString() const {
-    return "sub " + this->getName() + ";";
+    std::stringstream ss;
+    ss << "sub " << this->getName() << "(";
+    // this thing lists all the params and then all the locals in the same list
+    // but always in that order. whatever idiot designed it that way (me) is an idiot.
+    bool isFirstParam = true;
+    for (auto const var : varlist) {
+        if (var->exprClass() != PARAM) break;
+        if (isFirstParam) {
+            isFirstParam = false;
+        }
+        else {
+            ss << ", ";
+        }
+        ss << var->toString();
+    }
+    ss << ") : " << getSubType()->getReturnType()->getName();
+
+    return ss.str();
 }

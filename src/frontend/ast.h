@@ -31,6 +31,7 @@ private:
     type_map types;
     // For convenience, to avoid lookups.
     const Type *void_type;
+    const SubType *void_sub_type;
     
     Sub *implicit_main;
     
@@ -777,7 +778,7 @@ public:
         HAS_ALIAS = 0x8
     };
     
-    explicit Sub(const std::string &name, const Type *type, int flags) :
+    explicit Sub(const std::string &name, const SubType *type, int flags) :
         Var(name, type), first(nullptr), current_container(nullptr), flags(flags) { }
         
     ~Sub();
@@ -793,7 +794,11 @@ public:
     void setAlias(const std::string &alias) { flags |= HAS_ALIAS; aliasname = alias; }
     const std::string getAlias() const { return aliasname; }
     
-    void setType(const Type *newtype) { type = newtype; }
+    void setType(const SubType *newtype) { type = newtype; }
+    const SubType *getSubType() const {
+        assert(type->typeClass() == Type::SUBTYPE);
+        return static_cast<const SubType *>(type);
+    }
     
     bool addParamOrLocal(const std::string &varName, Var *var);
     

@@ -1,6 +1,5 @@
 #include "glaz.h"
 #include "ast.h"
-#include <boost/algorithm/string/case_conv.hpp>
 
 using namespace glaz;
 
@@ -12,7 +11,7 @@ Sub::~Sub() {
 }
 
 bool Sub::addParamOrLocal(const std::string &varName, Var *var) {
-    std::string lower = boost::to_lower_copy(varName);
+    std::string lower = getIdLookupString(varName);
     var_map::const_iterator entry = vars.find(lower);
     if (entry != vars.end())
         return false;
@@ -23,7 +22,7 @@ bool Sub::addParamOrLocal(const std::string &varName, Var *var) {
 }
 
 Var *Sub::getVar(const std::string &varName) const {
-    std::string lower = boost::to_lower_copy(varName);
+    std::string lower = getIdLookupString(varName);
     
     // Is it in locals/params?
     var_map::const_iterator entry = vars.find(lower);
@@ -42,8 +41,8 @@ Var *Sub::getVar(unsigned int index) const {
 }
 
 bool Sub::setVarName(const std::string &oldname, const std::string &newname) {
-    std::string oldlower = boost::to_lower_copy(oldname);
-    std::string newlower = boost::to_lower_copy(newname);
+    std::string oldlower = getIdLookupString(oldname);
+    std::string newlower = getIdLookupString(newname);
     
     var_map::iterator entry = vars.find(oldlower);
     if (entry == vars.end())
@@ -60,7 +59,7 @@ bool Sub::setVarName(const std::string &oldname, const std::string &newname) {
 }
 
 bool Sub::addLabel(const std::string &labelName) {
-    std::string lower = boost::to_lower_copy(labelName);
+    std::string lower = getIdLookupString(labelName);
     label_map::const_iterator entry = labels.find(lower);
     if (entry != labels.end())
         return false;
@@ -71,7 +70,7 @@ bool Sub::addLabel(const std::string &labelName) {
 
 Label *Sub::getLabel(const std::string &labelName) const {
     label_map::const_iterator entry =
-        labels.find(boost::to_lower_copy(labelName));
+        labels.find(getIdLookupString(labelName));
     if (entry == labels.end())
         return 0;
     

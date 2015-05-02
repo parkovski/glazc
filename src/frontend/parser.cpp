@@ -1,5 +1,5 @@
+#include "glaz.h"
 #include <iostream>
-#include <boost/algorithm/string/predicate.hpp>
 #include "parser.h"
 #include "diag.h"
 
@@ -116,7 +116,7 @@ Token *Parser::statement(Token *&tail) {
             stmt = labelStmt();
             break;
         } else if (lookahead == SETID) {
-            if (!boost::iequals(toktext(), "string")) {
+            if (!strEqualIdLookup(toktext(), "string")) {
                 error("expected 'string setid' or at least something correct");
             } else {
                 stmt = setidStmt();
@@ -562,6 +562,7 @@ Token *Parser::primary() {
     case FCON:
     case DCON:
     case SYSVAR:
+    case INTRINSICID:
         token = gettok();
         scan();
         return token;
@@ -582,7 +583,7 @@ Token *Parser::primary() {
             }
         }
         return token;
-        
+
     case COMMAND:
         token = gettok();
         scan();
