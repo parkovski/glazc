@@ -541,9 +541,9 @@ Token *Parser::assign(Token *lval) {
 }
 
 // Reads a primary expression. This is one of:
-// ICON (integer constant)
-// DCON (floating point constant)
-// SCON (string constant)
+// INTCONST (integer constant)
+// DOUBLECONST (floating point constant)
+// STRINGCONST (string constant)
 // SYSVAR (i.e. constants created by SETID)
 // lvalue (ID, member/array access, pointer dereference/cast)
 // '&' lvalue (take address of something)
@@ -554,13 +554,13 @@ Token *Parser::primary() {
     Token *callnode;
     
     switch (current) {
-    case SCON:
-    case ICON:
-    case UCON:
-    case LCON:
-    case ULCON:
-    case FCON:
-    case DCON:
+    case STRINGCONST:
+    case INTCONST:
+    case UINTCONST:
+    case LONGINTCONST:
+    case ULONGINTCONST:
+    case FLOATCONST:
+    case DOUBLECONST:
     case SYSVAR:
     case INTRINSICID:
         token = gettok();
@@ -878,7 +878,7 @@ Token *Parser::subParamList(Token *&tail) {
             
             if (scan() == ',') {
                 // Is it ", 0" for a NULL terminated list?
-                if (getLookahead() == ICON) {
+                if (getLookahead() == INTCONST) {
                     scan();
                     // Only allow the integer constant '0'.
                     if (*scanner->tok == '0' &&
@@ -1044,7 +1044,7 @@ Token *Parser::declareStmt() {
     bool command = false, fnptr = false;
     
     // String?
-    if (scan() == SCON) {
+    if (scan() == STRINGCONST) {
         Token *str = gettok();
         
         bool isCdecl = false;
@@ -1127,14 +1127,14 @@ Token *Parser::declareStmt() {
     if (command)
         commands_put(token->text, 1);
     
-    // ALIAS ID|SCON|COMMAND
+    // ALIAS ID|STRINGCONST|COMMAND
     if (scan() == ALIAS) {
         if (fnptr) {
             error("ALIAS not allowed with '#' specifier");
             skipTo('(', /*acceptColon=*/true);
         } else {
             Token *aliasnode = gettok();
-            if (scan() == ID || current == SCON || current == COMMAND) {
+            if (scan() == ID || current == STRINGCONST || current == COMMAND) {
                 aliasnode->child = gettok();
                 token = token->next = aliasnode;
                 scan();
@@ -1334,7 +1334,7 @@ Token *Parser::setidStmt() {
         head = gettok();
     }
     
-    if (scan() != SCON) {
+    if (scan() != STRINGCONST) {
         error("expected string constant");
         token_free(head);
         return 0;
@@ -1390,7 +1390,7 @@ Token *Parser::typeStmt() {
     node->id = ID; // in case it was a command
     
     if (scan() == ',') {
-        if (scan() != ICON) {
+        if (scan() != INTCONST) {
             error("expected integer constant");
             token_free(head);
             return 0;
@@ -1425,7 +1425,7 @@ Token *Parser::typeStmt() {
 Token *Parser::autodefineStmt() {
     Token *head = gettok();
     
-    if (scan() == SCON) {
+    if (scan() == STRINGCONST) {
         // check value of string
         if (current_loc.num_columns == 4 || current_loc.num_columns == 5) {
             // Start at 1 because tok[0] is the quote character.
@@ -1469,7 +1469,7 @@ Token *Parser::ifStmt(Token *&tail) {
     Token *ex = expr();
     if (!ex) {
         // pretend there was an expression for error recovery
-        ex = token_from_text("0", ICON);
+        ex = token_from_text("0", INTCONST);
     }
     internal_tail = head->child = ex;
     
@@ -1565,7 +1565,7 @@ elseif_else_loop:
             // error recovery: we're pretty deep in at this point.
             // no use discarding the whole IF block. create an expression
             // that would never get executed anyways.
-            internal_tail = local_tail->child = token_from_text("0", ICON);
+            internal_tail = local_tail->child = token_from_text("0", INTCONST);
         }
     } else {
         scanned_else = true;
@@ -1625,7 +1625,7 @@ Token *Parser::selectStmt(Token *&tail) {
     if (!head->child) {
         // fake an expression. doesn't matter what because it won't get
         // compiled anyways. just so long as it's semantically valid.
-        head->child = token_from_text("0", ICON);
+        head->child = token_from_text("0", INTCONST);
     }
     
     local_tail = head;
@@ -1642,7 +1642,7 @@ next_block:
         local_tail->child = expr();
         if (!local_tail->child) {
             // fake it, just like above.
-            local_tail->child = token_from_text("0", ICON);
+            local_tail->child = token_from_text("0", INTCONST);
         }
         internal_tail = local_tail->child;
     } else if (current == DEFAULT) {
@@ -1831,7 +1831,7 @@ Token *Parser::doStmt() {
         error("expected UNTIL");
         // insert a dummy node for the expression
         term = token_from_text("until", WHILE);
-        term->child = token_from_text("1", ICON);
+        term->child = token_from_text("1", INTCONST);
         head->child = term;
         return head;
     }
@@ -1844,7 +1844,7 @@ Token *Parser::doStmt() {
             term->child = expr();
             // error recovery:
             if (!term->child)
-                term->child = token_from_text("1", ICON);
+                term->child = token_from_text("1", INTCONST);
             // now insert it as the first node.
             term->next = head->child;
             head->child = term;
@@ -1864,7 +1864,7 @@ Token *Parser::doStmt() {
             error("expected UNTIL");
             // insert a dummy node for the expression
             term = token_from_text("until", UNTIL);
-            term->child = token_from_text("1", ICON);
+            term->child = token_from_text("1", INTCONST);
             term->next = head->child;
             head->child = term;
             return head;

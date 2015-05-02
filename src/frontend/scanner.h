@@ -5,44 +5,44 @@
 namespace glaz {
 #endif
 
-enum {
+enum TokenId {
     /* operators */
-    ELLIPSIS = 257,
-    RSHIFTEQ,
-    LSHIFTEQ,
-    ADDEQ,
-    SUBEQ,
-    MULEQ,
-    DIVEQ,
-    MODEQ,
-    ANDEQ,
-    POWEQ,
-    OREQ,
-    XOREQ,
-    RSHIFT,
-    LSHIFT,
-    INCR,
-    DECR,
-    ARROW,
-    XOR,
-    LEQ,
-    GEQ,
-    NEQ,
+    ELLIPSIS = 257,     // ... (var-args)
+    RSHIFTEQ,           // >>= (right shift & assign)
+    LSHIFTEQ,           // <<= (left shift & assign)
+    ADDEQ,              // += (add & assign)
+    SUBEQ,              // -= (subtract & assign)
+    MULEQ,              // *= (multiply & assign)
+    DIVEQ,              // /= (divide & assign)
+    MODEQ,              // %= (modulo & assign)
+    ANDEQ,              // &= (bitwise and & assign)
+    POWEQ,              // ^= (raise to power & assign)
+    OREQ,               // |= (bitwise or & assign)
+    XOREQ,              // ||= (xor & assign)
+    RSHIFT,             // >> (shift right)
+    LSHIFT,             // << (shift left)
+    INCR,               // ++ (increment)
+    DECR,               // -- (decrement)
+    ARROW,              // -> (do we even use this?)
+    XOR,                // || (xor)
+    LEQ,                // <= (less than or equal)
+    GEQ,                // >= (greater than or equal)
+    NEQ,                // <> (not equal)
     
     /* general tokens */
     ID,
-    INTRINSICID,
-    COMMAND,
-    SYSVAR,
-    ICON,
-    UCON,
-    LCON,
-    ULCON,
-    FCON,
-    DCON,
-    SCON,
-    EOL,
-    EOI,
+    INTRINSICID,        // a built in ID that resolves to a constant like true/false/null
+    COMMAND,            // a function with special treatment from the parser
+    SYSVAR,             // an @foo variable
+    INTCONST,
+    UINTCONST,
+    LONGINTCONST,
+    ULONGINTCONST,
+    FLOATCONST,
+    DOUBLECONST,
+    STRINGCONST,
+    EOL,                // end of line
+    EOI,                // end of input (not called EOF b/c C reserves that)
     
     /* keywords */
     LABEL,
@@ -83,26 +83,26 @@ enum {
     NEW,
     DELETE,
     PRINT,
-    LET,
+    LET,                // the "let" keyword and also the assignment node id
     WAITUNTIL,
     USECOMPONENT,
     INTERNAL,
     ENDINTERNAL,
     
     /* non-keyword node header values */
-    PRINTLN,
-    STRINGSETID,
-    UMINUS,
-    ELSEIF,
-    ADDROF,
-    DEREF
+    PRINTLN,            // print statement without trailing ','
+    STRINGSETID,        // a setid (@foo) that does string interpolation
+    UMINUS,             // unary minus (negation)
+    ELSEIF,             // the "elseif" node for the "else if" compound keyword
+    ADDROF,             // & (address of)
+    DEREF               // * or # (pointer dereference)
 };
 
 typedef struct Scanner {
-    /*int             fd;*/
     FILE            *file;
     unsigned int    line;
     const char      *filename;
+    // lol good luck
     unsigned char   *bot, *tok, *ptr, *cur,
                     *pos, *lim, *top, *eof;
 } Scanner;
@@ -122,7 +122,7 @@ typedef struct Token {
     struct Token *next;
     struct Token *child;
     SourceLocation loc;
-    char text[1]; // must at least have space for the null character
+    char text[1]; // scanner functions allocate enough room here for the full text of the token
 } Token;
 
 #ifdef __cplusplus

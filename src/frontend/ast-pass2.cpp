@@ -176,7 +176,7 @@ bool Component::pass2_type(Token *tree) {
     // Check if the node after the name and optional alignment specifier
     // exists. If not, the body was empty, which is illegal.
     if (!tree->child->next ||
-            (tree->child->next->id == ICON && !tree->child->next->next)) {
+            (tree->child->next->id == INTCONST && !tree->child->next->next)) {
         printf("error: type '%s' not allowed to be empty (line %d)\n",
             tree->child->text, tree->child->loc.first_line);
         return false;
@@ -184,7 +184,7 @@ bool Component::pass2_type(Token *tree) {
     
     tree = tree->child->next;
     
-    if (tree->id == ICON) // alignment specifier
+    if (tree->id == INTCONST) // alignment specifier
         tree = tree->next;
     
     while (tree) {
@@ -504,13 +504,13 @@ Component::pass2_expr(const Token *tree, Sub *sub) {
         // TODO: make sure these are things that actually have addresses.
         return new AddrOf(pass2_expr(tree->child, sub));
     
-    case ICON:
-    case UCON:
-    case LCON:
-    case ULCON:
-    case FCON:
-    case DCON:
-    case SCON:
+    case INTCONST:
+    case UINTCONST:
+    case LONGINTCONST:
+    case ULONGINTCONST:
+    case FLOATCONST:
+    case DOUBLECONST:
+    case STRINGCONST:
         return pass2_litconst(tree);
     
     case CALL:
@@ -580,25 +580,25 @@ Component::pass2_cmpexpr(const Token *tree, int op,
 Expression *
 Component::pass2_litconst(const Token *tree) {
     switch (tree->id) {
-    case ICON:
+    case INTCONST:
         return new LitConstant(strtoll(tree->text, 0, 10), getType("int"));
         
-    case UCON:
+    case UINTCONST:
         return new LitConstant(strtoull(tree->text, 0, 10), getType("uint"));
         
-    case LCON:
+    case LONGINTCONST:
         return new LitConstant(strtoll(tree->text, 0, 10), getType("int64"));
         
-    case ULCON:
+    case ULONGINTCONST:
         return new LitConstant(strtoull(tree->text, 0, 10), getType("uint64"));
         
-    case FCON:
+    case FLOATCONST:
         return new LitConstant(strtod(tree->text, 0), getType("float"));
         
-    case DCON:
+    case DOUBLECONST:
         return new LitConstant(strtod(tree->text, 0), getType("double"));
             
-    case SCON: {
+    case STRINGCONST: {
         std::string text(tree->text);
         return new LitConstant(text,
             new ArrayType(getType("char"), text.length())

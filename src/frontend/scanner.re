@@ -165,16 +165,16 @@ DC  = (D+ E) | (D* "." D+ E?) | (D+ "." D* E?);
     
     "@" (L|D)*      { RET(SYSVAR); }
     
-    IC              { RET(ICON); }
-    IC US           { RET(UCON); }
-    IC LS           { RET(LCON); }
-    IC ULS          { RET(ULCON); }
+    IC              { RET(INTCONST); }
+    IC US           { RET(UINTCONST); }
+    IC LS           { RET(LONGINTCONST); }
+    IC ULS          { RET(ULONGINTCONST); }
     
-    DC              { RET(DCON); }
-    DC FS           { RET(FCON); }
+    DC              { RET(DOUBLECONST); }
+    DC FS           { RET(FLOATCONST); }
     
     (["] ("\"\""|any\[\n\"])* ["])
-                    { RET(SCON); }
+                    { RET(STRINGCONST); }
     
     "..."           { RET(ELLIPSIS); }
     ">>="           { RET(RSHIFTEQ); }

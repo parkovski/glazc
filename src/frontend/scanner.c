@@ -447,7 +447,7 @@ yy28:
 	}
 yy29:
 #line 166 "scanner.re"
-	{ RET(ICON); }
+	{ RET(INTCONST); }
 #line 452 "scanner.c"
 yy30:
 	yyaccept = 2;
@@ -824,7 +824,7 @@ yy125:
 	}
 yy126:
 #line 175 "scanner.re"
-	{ RET(SCON); }
+	{ RET(STRINGCONST); }
 #line 829 "scanner.c"
 yy127:
 	yych = *++YYCURSOR;
@@ -856,7 +856,7 @@ yy128:
 	}
 yy130:
 #line 171 "scanner.re"
-	{ RET(DCON); }
+	{ RET(DOUBLECONST); }
 #line 861 "scanner.c"
 yy131:
 	yych = *++YYCURSOR;
@@ -878,7 +878,7 @@ yy131:
 yy132:
 	++YYCURSOR;
 #line 172 "scanner.re"
-	{ RET(FCON); }
+	{ RET(FLOATCONST); }
 #line 883 "scanner.c"
 yy134:
 	yych = *++YYCURSOR;
@@ -979,17 +979,17 @@ yy143:
 	}
 yy144:
 #line 167 "scanner.re"
-	{ RET(UCON); }
+	{ RET(UINTCONST); }
 #line 984 "scanner.c"
 yy145:
 	++YYCURSOR;
 #line 168 "scanner.re"
-	{ RET(LCON); }
+	{ RET(LONGINTCONST); }
 #line 989 "scanner.c"
 yy147:
 	++YYCURSOR;
 #line 169 "scanner.re"
-	{ RET(ULCON); }
+	{ RET(ULONGINTCONST); }
 #line 994 "scanner.c"
 yy149:
 	yych = *++YYCURSOR;

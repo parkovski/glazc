@@ -357,7 +357,7 @@ bool Component::pass1_type(Token *tree) {
     int align = 0; // default alignment
     
     // (TYPE name <number>)? <= alignment specifier
-    if (tree->child->next && tree->child->next->id == ICON) {
+    if (tree->child->next && tree->child->next->id == INTCONST) {
         align = atoi(tree->child->next->text);
         // Only allow 1, 2, 4, 8
         if (align != 1 && align != 2 && align != 4 && align != 8) {
@@ -397,7 +397,7 @@ bool Component::addSubOrDeclare(Token *tree, Sub *&me) {
     
     // If it's a declare, we might have a string literal here
     Token *idnode = tree->child;
-    if (idnode->id == SCON) {
+    if (idnode->id == STRINGCONST) {
         // scan the string for flags
         int i;
         for (i = 1; ; i++) {
@@ -486,7 +486,7 @@ bool Component::addSubOrDeclare(Token *tree, Sub *&me) {
     if (param->id == ALIAS) {
         assert(me && "parser should have disallowed function ptr with alias");
         // If it's quoted take off the quotes.
-        if (param->child->id == SCON)
+        if (param->child->id == STRINGCONST)
             me->setAlias(std::string(param->child->text+1,
                 strlen(param->child->text+1)-1));
         else
@@ -521,7 +521,7 @@ bool Component::addSubOrDeclare(Token *tree, Sub *&me) {
                     type->addFlags(
                         SubType::VARARGS | SubType::VA_IMPLICIT_LEN
                         );
-                } else if (param->child->id == ICON) {
+                } else if (param->child->id == INTCONST) {
                     type->addFlags(
                         SubType::VARARGS | SubType::VA_IMPLICIT_NULL
                         );
@@ -640,7 +640,7 @@ bool Component::paramListsEqual(Token *&tree, Sub *sub) const {
             if (tree->child->id == LEN &&
                     ((subty->getFlags() & SubType::VA_IMPLICIT_LEN) == 0))
                 iseq = false;
-            else if (tree->child->id == ICON &&
+            else if (tree->child->id == INTCONST &&
                     ((subty->getFlags() & SubType::VA_IMPLICIT_NULL) == 0))
                 iseq = false;
         }
