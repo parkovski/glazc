@@ -14,7 +14,7 @@ Parser::~Parser() {
 // couldn't be opened.
 Parser *Parser::create(const char *filename) {
     Scanner *s = scanner_init(filename);
-    if (!s) return 0;
+    if (!s) return nullptr;
     // TODO: the commands functionality won't work with multiple parsers
     commands_put("true", INTRINSICID);
     commands_put("false", INTRINSICID);
@@ -22,44 +22,20 @@ Parser *Parser::create(const char *filename) {
     return new Parser(s, filename, new Diagnostics());
 }
 
-void Parser::error(const char *text) {
-    std::cout << filename << ":" << current_loc.first_line << ":" <<
-        current_loc.first_column << ": error: " << text << " (found: '";
-        
-    if (current == EOL)
-        std::cout << "<eol>";
-    else if (current == EOI)
-        std::cout << "<eof>"; // more commonly understood abbreviation...
-    else
-        std::cout << toktext();
-    
-    std::cout << "')";
-    
-    had_error = true;
-    // hack: so that Diagnostics logs the error and counts up to maxErrors.
-    diag->error("");
+void Parser::error(const std::string &message) {
+    diag->error(filename, message, toktext(), current_loc);
 }
 
-void Parser::warn(const char *text) {
-    std::cout << filename << ":" << current_loc.first_line << ":" <<
-        current_loc.first_column << ": warning: " << text << " (found: '";
-    
-    if (current == EOL)
-        std::cout << "<eol>";
-    else if (current == EOI)
-        std::cout << "<eof>"; // more commonly understood abbreviation...
-    else
-        std::cout << toktext();
-    
-    std::cout << "')\n";
+void Parser::warning(const std::string &message) {
+    diag->warning(filename, message, toktext(), current_loc);
 }
 
 // Decides what type of statement this is and calls the appropriate parser.
 // The tail parameter is because some statements (if and select) actually
 // return a list of statements for each of their nodes.
 Token *Parser::statement(Token *&tail) {
-    Token *stmt = 0;
-    Token *settail = 0;
+    Token *stmt = nullptr;
+    Token *settail = nullptr;
     
     switch (current) {
     case PRINT:
@@ -226,7 +202,7 @@ Token *Parser::statement(Token *&tail) {
     }
     
     // If there were errors, skip the rest of the line.
-    if (stmt == 0)
+    if (stmt == nullptr)
         skipToStmtSep();
     else {
         if (settail)
@@ -241,7 +217,7 @@ Token *Parser::statement(Token *&tail) {
 // Called from single line IF statements. Mostly prevents other multiple line
 // statements from being accepted.
 Token *Parser::restrictedStmt() {
-    Token *stmt = 0;
+    Token *stmt = nullptr;
     
     switch (current) {
     case PRINT:
@@ -322,7 +298,7 @@ Token *Parser::restrictedStmt() {
     }
     
     // If there were errors, skip the rest of the line.
-    if (stmt == 0)
+    if (stmt == nullptr)
         skipToStmtSep();
     
     return stmt;
@@ -389,13 +365,13 @@ Token *Parser::lvalue() {
             
             if (!token->child) {
                 token_free(token);
-                return 0;
+                return nullptr;
             }
             
             if (current != ')') {
                 error("expected ')'");
                 token_free(token);
-                return 0;
+                return nullptr;
             }
             scan();
         } else {
@@ -404,7 +380,7 @@ Token *Parser::lvalue() {
             if (!token->child) {
                 error("expected something that makes sense");
                 token_free(token);
-                return 0;
+                return nullptr;
             }
         }
         
@@ -420,10 +396,10 @@ Token *Parser::lvalue() {
     
     Token *head = dotlessLvalue();
     Token *node = head;
-    Token *array = 0;
+    Token *array = nullptr;
     
     if (!head) {
-        return 0;
+        return nullptr;
     }
     
     if ((array = optArrayAccess())) {
@@ -441,7 +417,7 @@ Token *Parser::lvalue() {
         if (!node) {
             error("expected lvalue (identifier)");
             token_free_all(head);
-            return 0;
+            return nullptr;
         }
         
         if ((array = optArrayAccess())) {
@@ -457,7 +433,7 @@ Token *Parser::lvalue() {
         if (!node) {
             error("expected lvalue (identifier)");
             token_free_all(head);
-            return 0;
+            return nullptr;
         }
         
         if ((array = optArrayAccess())) {
@@ -483,13 +459,13 @@ Token *Parser::dotlessLvalue() {
         if (current != ID) {
             error("expected identifier");
             token_free(token);
-            return 0;
+            return nullptr;
         }
         token->child = gettok();
         scan();
     } else {
         token_free(token);
-        return 0;
+        return nullptr;
     }
     
     return token;
@@ -514,7 +490,7 @@ Token *Parser::call(Token *lval) {
                 scan();
             if (first)
                 token_free_all(first);
-            return 0;
+            return nullptr;
         } else {
             scan();
         }
@@ -536,7 +512,7 @@ Token *Parser::assign(Token *lval) {
     Token *rhs = expr();
     if (!rhs) {
         token_free(eq);
-        return 0;
+        return nullptr;
     }
     
     lval->next = rhs;
@@ -576,14 +552,14 @@ Token *Parser::primary() {
     case ID:
         token = lvalue();
         if (!token)
-            return 0;
+            return nullptr;
         if (current == '(') {
             callnode = call(token);
             if (callnode)
                 token = callnode;
             else {
                 token_free_all(token);
-                token = 0;
+                token = nullptr;
             }
         }
         return token;
@@ -602,7 +578,7 @@ Token *Parser::primary() {
             return callnode;
         else {
             token_free(token);
-            return 0;
+            return nullptr;
         }
         
     case '&':
@@ -612,7 +588,7 @@ Token *Parser::primary() {
         token->child = lvalue();
         if (!token->child) {
             token_free(token);
-            return 0;
+            return nullptr;
         }
         return token;
         
@@ -624,7 +600,7 @@ Token *Parser::primary() {
         if (!token->child) {
             error("expected expression");
             token_free(token);
-            return 0;
+            return nullptr;
         }
         return token;
         
@@ -635,12 +611,12 @@ Token *Parser::primary() {
             // error recovery
             if (skipTo(')'))
                 scan();
-            return 0;
+            return nullptr;
         }
         if (current != ')') {
             error("expected ')'");
             token_free(token);
-            return 0;
+            return nullptr;
         }
         scan(); // ')'
         return token;
@@ -650,31 +626,31 @@ Token *Parser::primary() {
         scan();
         if (!(token->child = typeName())) {
             token_free(token);
-            return 0;
+            return nullptr;
         }
                 
         if (current != '(') {
             error("expected '('");
             token_free(token);
-            return 0;
+            return nullptr;
         }
         scan();
         
-        if ((token->child->next = expr()) == 0) {
+        if ((token->child->next = expr()) == nullptr) {
             token_free(token);
-            return 0;
+            return nullptr;
         }
         
         if (current != ')') {
             error("expected ')'");
             token_free(token);
-            return 0;
+            return nullptr;
         }
         scan();
         return token;
         
     default:
-        return 0;
+        return nullptr;
     }
 }
 
@@ -729,7 +705,7 @@ Token *Parser::operPrecExpr(Token *lhs, int prec) {
         if (!right) {
             error("expected expression");
             token_free(head);
-            return 0;
+            return nullptr;
         }
         
         int newprec;
@@ -751,7 +727,7 @@ Token *Parser::operPrecExpr(Token *lhs, int prec) {
 Token *Parser::optExpr() {
     Token *lhs = primary();
     if (!lhs)
-        return 0;
+        return nullptr;
         
     return operPrecExpr(lhs, 1);
 }
@@ -776,7 +752,7 @@ Token *Parser::optExprList(Token *&tail) {
         next = this->expr();
         if (!next) {
             token_free_all(head);
-            return 0;
+            return nullptr;
         }
         
         expr = expr->next = next;
@@ -798,7 +774,7 @@ Token *Parser::exprList(Token *&tail) {
 // If there is an '[', reads a list of expressions for array access.
 Token *Parser::optArrayAccess() {
     if (current != '[')
-        return 0;
+        return nullptr;
         
     Token *list = gettok();
     scan();
@@ -820,7 +796,7 @@ Token *Parser::typeName() {
     Token *head;
     if (current != ID && current != COMMAND) {
         error("expected type name");
-        return 0;
+        return nullptr;
     }
     
     head = gettok();
@@ -856,7 +832,7 @@ Token *Parser::subParamList(Token *&tail) {
                 token_free(lentok);
                 if (head)
                     token_free_all(head);
-                return 0;
+                return nullptr;
             }
             
             // Current token is the '...'
@@ -870,7 +846,7 @@ Token *Parser::subParamList(Token *&tail) {
             if (scan() == ',') {
                 error("var-args (\"...\") must be the last argument");
                 token_free_all(head);
-                return 0;
+                return nullptr;
             }
             
             break;
@@ -895,12 +871,12 @@ Token *Parser::subParamList(Token *&tail) {
                     error("expected 'null' for null-terminated var-args");
                     if (head)
                         token_free_all(head);
-                    return 0;
+                    return nullptr;
                 }
                 
                 error("var-args (\"...\") must be the last argument");
                 token_free_all(head);
-                return 0;
+                return nullptr;
             }
             break;
         }
@@ -912,11 +888,11 @@ Token *Parser::subParamList(Token *&tail) {
             skipTo(')');
             if (head)
                 token_free_all(head);
-            return 0;
+            return nullptr;
         }
         
         Token *local_head = token_from_text("def", DEF);
-        if (head == 0)
+        if (head == nullptr)
             tailtmp = head = local_head;
         else
             tailtmp = tailtmp->next = local_head;
@@ -931,7 +907,7 @@ Token *Parser::subParamList(Token *&tail) {
         if (!(tailtmp->child = typeName())) {
             token_free(id);
             token_free_all(head);
-            return 0;
+            return nullptr;
         }
         
         tailtmp->child->next = id;
@@ -995,7 +971,7 @@ Token *Parser::gotoGosubStmt() {
     if (scan() != ID) {
         error("expected identifier");
         token_free(head);
-        return 0;
+        return nullptr;
     } else {
         head->child = gettok();
         scan();
@@ -1056,13 +1032,13 @@ Token *Parser::declareStmt() {
             switch (str->text[index]) {
             case '!':
                 if (isCdecl)
-                    warn("duplicate option \"!\"");
+                    warning("duplicate option \"!\"");
                 isCdecl = true;
                 break;
                 
             case '+':
                 if (command)
-                    warn("duplicate option \"+\"");
+                    warning("duplicate option \"+\"");
                 
                 if (fnptr) {
                     error("can't combine \"+\" and \"#\" options");
@@ -1074,7 +1050,7 @@ Token *Parser::declareStmt() {
                 
             case '#':
                 if (fnptr)
-                    warn("duplicate option \"#\"");
+                    warning("duplicate option \"#\"");
                 
                 if (command) {
                     error("can't combine \"+\" and \"#\" options");
@@ -1094,7 +1070,7 @@ Token *Parser::declareStmt() {
         
         // The function pointer option can't also be a library import
         // (str->text[index] should be a quote so skip it).
-        if (fnptr && str->text[index+1] != 0)
+        if (fnptr && str->text[index+1] != '\0')
             error("can't use library name with \"#\" option");
         
         // Ignore the information from the string for now. It will be rescanned
@@ -1113,7 +1089,7 @@ Token *Parser::declareStmt() {
         error("expected identifier");
         // Kind of pointless to try to continue
         token_free_all(head);
-        return 0;
+        return nullptr;
     }
     
     // If there was no string we need to create a child node here
@@ -1168,7 +1144,7 @@ Token *Parser::declareStmt() {
             scan();
             if (!(retnode->child = typeName())) {
                 token_free_all(head);
-                return 0;
+                return nullptr;
             }
             token = token->next = retnode;
         } else {
@@ -1195,7 +1171,7 @@ Token *Parser::subStmt() {
     if (scan() != ID && current != COMMAND) {
         error("expected identifier");
         token_free(head);
-        return 0;
+        return nullptr;
     }
     
     token = token->child = gettok();
@@ -1223,7 +1199,7 @@ Token *Parser::subStmt() {
             scan();
             if (!(retnode->child = typeName())) {
                 token_free_all(head);
-                return 0;
+                return nullptr;
             }
             token = token->next = retnode;
         } else {
@@ -1255,7 +1231,7 @@ Token *Parser::defStmt() {
     if (scan() != ID) {
         error("expected identifier");
         token_free(head);
-        return 0;
+        return nullptr;
     }
     
     namechain = gettok();
@@ -1268,7 +1244,7 @@ Token *Parser::defStmt() {
             error("expected identifier");
             token_free(head);
             token_free_all(namechain);
-            return 0;
+            return nullptr;
         }
         name = name->next = gettok();
         scan();
@@ -1279,14 +1255,14 @@ Token *Parser::defStmt() {
         error("expected ':' or AS");
         token_free(head);
         token_free_all(namechain);
-        return 0;
+        return nullptr;
     }
     scan();
     
     if (!(head->child = typeName())) {
         token_free(head);
         token_free_all(namechain);
-        return 0;
+        return nullptr;
     }
     
     // DEF <type> <names>
@@ -1302,7 +1278,7 @@ Token *Parser::constStmt() {
     if (scan() != ID) {
         error("expected identifier");
         token_free(head);
-        return 0;
+        return nullptr;
     }
     
     head->child = gettok();
@@ -1310,14 +1286,14 @@ Token *Parser::constStmt() {
     if (scan() != '=') {
         error("expected '='");
         token_free(head);
-        return 0;
+        return nullptr;
     }
     scan();
     
     Token *ex = expr();
     if (!ex) {
         token_free(head);
-        return 0;
+        return nullptr;
     }
     
     head->child->next = ex;
@@ -1339,7 +1315,7 @@ Token *Parser::setidStmt() {
     if (scan() != STRINGCONST) {
         error("expected string constant");
         token_free(head);
-        return 0;
+        return nullptr;
     }
     
     Token *scon = gettok();
@@ -1356,20 +1332,20 @@ Token *Parser::setidStmt() {
         
         error("SETID must have a valid identifier");
         token_free(head);
-        return 0;
+        return nullptr;
     }
     
     if (scan() != ',') {
         error("expected ','");
         token_free(head);
-        return 0;
+        return nullptr;
     }
     scan();
     
     Token *ex = expr();
     if (!ex) {
         token_free(head);
-        return 0;
+        return nullptr;
     }
     
     head->child->next = ex;
@@ -1385,7 +1361,7 @@ Token *Parser::typeStmt() {
     if (scan() != ID && current != COMMAND) {
         error("expected identifier");
         token_free(head);
-        return 0;
+        return nullptr;
     }
     
     node = node->child = gettok();
@@ -1395,7 +1371,7 @@ Token *Parser::typeStmt() {
         if (scan() != INTCONST) {
             error("expected integer constant");
             token_free(head);
-            return 0;
+            return nullptr;
         }
         node = node->next = gettok();
         scan();
@@ -1417,7 +1393,7 @@ Token *Parser::typeStmt() {
         } else {
             error("expected variable definition");
             token_free_all(head);
-            return 0;
+            return nullptr;
         }
     }
     // No need to return here. The loop will return when ENDTYPE or
@@ -1454,7 +1430,7 @@ Token *Parser::autodefineStmt() {
     
     error("expected string value \"on\" or \"off\"");
     token_free(head);
-    return 0;
+    return nullptr;
 }
 
 // Parses an IF statement, any number of ELSE IFs, and a possible ELSE.
@@ -1481,14 +1457,14 @@ Token *Parser::ifStmt(Token *&tail) {
         internal_tail = internal_tail->next = restrictedStmt();
         if (!internal_tail) {
             token_free(head);
-            return 0;
+            return nullptr;
         }
         while (current == ':') {
             scan();
             internal_tail = internal_tail->next = restrictedStmt();
             if (!internal_tail) {
                 token_free(head);
-                return 0;
+                return nullptr;
             }
         }
         
@@ -1498,14 +1474,14 @@ Token *Parser::ifStmt(Token *&tail) {
             internal_tail = local_tail->child = restrictedStmt();
             if (!internal_tail) {
                 token_free_all(head);
-                return 0;
+                return nullptr;
             }
             while (current == ':') {
                 scan();
                 internal_tail = internal_tail->next = restrictedStmt();
                 if (!internal_tail) {
                     token_free_all(head);
-                    return 0;
+                    return nullptr;
                 }
             }
         }
@@ -1574,7 +1550,7 @@ elseif_else_loop:
         
         // Do this so that we will insert the first node of the else branch
         // into the right place below.
-        internal_tail = 0;
+        internal_tail = nullptr;
     }
     
     if (stmtSeparator() == EOI) {
@@ -1655,7 +1631,7 @@ next_block:
         }
         parsed_default = true;
         local_tail = local_tail->next = gettok();
-        internal_tail = 0;
+        internal_tail = nullptr;
         scan();
     } else if (current == ENDSELECT) {
         scan();
@@ -1668,7 +1644,7 @@ next_block:
         // it probably doesn't happen very often anyways.
         // this is only possible before a block, so no need for token_free_all.
         token_free(head);
-        return 0;
+        return nullptr;
     }
     
     if (stmtSeparator() == EOI) {
@@ -1715,13 +1691,13 @@ Token *Parser::forStmt() {
     token = head->child = lvalue();
     if (!head->child) {
         token_free(head);
-        return 0;
+        return nullptr;
     }
     
     if (current != '=') {
         error("expected assignment statement");
         token_free(head);
-        return 0;
+        return nullptr;
     }
     
     // Note, we don't construct an actual assignment node here, because we
@@ -1730,20 +1706,20 @@ Token *Parser::forStmt() {
     token = token->next = expr();
     if (!token) {
         token_free(head);
-        return 0;
+        return nullptr;
     }
     
     if (current != TO) {
         error("expected TO");
         token_free(head);
-        return 0;
+        return nullptr;
     }
     
     scan();
     token = token->next = expr();
     if (!token) {
         token_free(head);
-        return 0;
+        return nullptr;
     }
     
     if (current == '#' || current == STEP) {
@@ -1753,7 +1729,7 @@ Token *Parser::forStmt() {
         token->child = expr();
         if (!token->child) {
             token_free(head);
-            return 0;
+            return nullptr;
         }
     }
     
@@ -1795,7 +1771,7 @@ Token *Parser::whileStmt() {
     token = head->child = expr();
     if (!token) {
         token_free(head);
-        return 0;
+        return nullptr;
     }
     
     if (stmtSeparator() == EOI) {
@@ -1821,7 +1797,7 @@ Token *Parser::whileStmt() {
     }
 }
 
-// Parses a DO block. GlazBasic extension: can use DO/UNTIL or DO/WHILE.
+// Parses a DO block.
 Token *Parser::doStmt() {
     Token *head = gettok();
     Token *term;
@@ -1833,7 +1809,7 @@ Token *Parser::doStmt() {
         error("expected UNTIL");
         // insert a dummy node for the expression
         term = token_from_text("until", WHILE);
-        term->child = token_from_text("1", INTCONST);
+        term->child = token_from_text("true", INTRINSICID);
         head->child = term;
         return head;
     }
@@ -1846,7 +1822,7 @@ Token *Parser::doStmt() {
             term->child = expr();
             // error recovery:
             if (!term->child)
-                term->child = token_from_text("1", INTCONST);
+                term->child = token_from_text("true", INTRINSICID);
             // now insert it as the first node.
             term->next = head->child;
             head->child = term;
@@ -1866,7 +1842,7 @@ Token *Parser::doStmt() {
             error("expected UNTIL");
             // insert a dummy node for the expression
             term = token_from_text("until", UNTIL);
-            term->child = token_from_text("1", INTCONST);
+            term->child = token_from_text("true", INTRINSICID);
             term->next = head->child;
             head->child = term;
             return head;
@@ -1877,9 +1853,9 @@ Token *Parser::doStmt() {
 // Parses a list of statements separated by stmtSeparator and returns a list
 // of Tokens representing the program.
 Token *Parser::parse() {
-    Token *token = 0;
-    Token *next = 0;
-    Token *head = 0;
+    Token *token = nullptr;
+    Token *next = nullptr;
+    Token *head = nullptr;
     
     // Get the first token
     scan();
@@ -1890,34 +1866,44 @@ Token *Parser::parse() {
     
     // It could be an empty program.
     if (current == EOI)
-        return 0;
+        return nullptr;
     
     while (!head) {
-        head = statement(token);
-    
-        if (stmtSeparator() == EOI)
-            return head;
-            
         if (diag->shouldExit()) {
             std::cout << "too many errors. exiting.\n";
             token_free_all(head);
-            return 0;
+            return nullptr;
+        }
+
+        head = statement(token);
+    
+        if (stmtSeparator() == EOI) {
+            if (diag->hadError()) {
+                if (head) token_free_all(head);
+                return nullptr;
+            }
+            return head;
         }
     }
     
     while (true) {
+        if (diag->shouldExit()) {
+            std::cout << "too many errors. exiting.\n";
+            token_free_all(head);
+            return nullptr;
+        }
+
         if ((token->next = statement(next))) {
             token = next;
-        } else {
-            if (diag->shouldExit()) {
-                std::cout << "too many errors. exiting.\n";
+        }        
+
+        if (stmtSeparator() == EOI) {
+            if (diag->hadError()) {
                 token_free_all(head);
-                return 0;
+                return nullptr;
             }
-        }
-        
-        if (stmtSeparator() == EOI)
             return head;
+        }
     }
 }
 

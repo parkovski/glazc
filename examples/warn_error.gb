@@ -1,0 +1,5 @@
+' this will not compile
+
+declare "++", some_command()
+
+if some_command is a function then print "syntax error much?"

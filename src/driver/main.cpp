@@ -148,10 +148,7 @@ int main(int argc, char *argv[]) {
     
     Token *tree = parser->parse();
     
-    if (parser->failed()) {
-        token_free_all(tree);
-    } else {
-        
+    if (!parser->failed()) {
         if (emitter == PARSETREE) {
             Token *node = tree;
             while (node) {
@@ -167,6 +164,8 @@ int main(int argc, char *argv[]) {
         else {
             cout << "sorry this emitter isn't currently supported!" << endl;
         }
+
+        if (tree) token_free_all(tree);
 
         //Component *c = Component::fromTree(tree, true);
         //delete c;

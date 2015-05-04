@@ -2,10 +2,9 @@
 #define PARSER_H
 
 #include "scanner.h"
+#include "diag.h"
 
 namespace glaz {
-
-class Diagnostics;
 
 class Parser {
     Scanner *scanner;
@@ -23,15 +22,13 @@ class Parser {
     // If old was referenced (returned by gettok), then we shouldn't delete it.
     bool old_referenced;
     
-    bool had_error;
     
     Parser(Scanner *sc, const std::string &filename, Diagnostics *diag) :
         scanner(sc),
         diag(diag),
         filename(filename),
         old(0),
-        old_referenced(false),
-        had_error(false) { }
+        old_referenced(false) { }
             
     int scan() {
         if (old) {
@@ -67,14 +64,18 @@ class Parser {
     
     std::string toktext() {
         if (old) {
+            if (old->id == EOL) return "<line break>";
+            if (old->id == EOI) return "<end of file>";
             return std::string(old->text);
         }
+        if (current == EOL) return "<line break>";
+        if (current == EOI) return "<end of file>";
         return std::string((const char *)scanner->tok,
             (size_t)(scanner->cur - scanner->tok));
     }
     
-    void error(const char *text);
-    void warn(const char *text);
+    void error(const std::string &message);
+    void warning(const std::string &message);
     
     Token *statement(Token *&tail);
     Token *restrictedStmt();
@@ -86,7 +87,6 @@ class Parser {
     Token *dotlessLvalue();
     Token *call(Token *);
     Token *assign(Token *);
-    // possibly replace with operator precedence parser?
     Token *primary();
     
     int getPrec() const;
@@ -126,8 +126,12 @@ public:
     // Returns a Token representing the first statement in the program.
     // child -> the rest of this statement
     // next -> the head of the next statement
+    // Returns null for an empty (valid) or invalid program.
     Token *parse();
-    bool failed() const { return had_error; }
+    // If this returns false, parse will have returned null.
+    // Note however that parse can return null for an empty program, which is valid,
+    // so you should call this to see if the program was actually invalid.
+    bool failed() const { return diag->hadError(); }
 };
 
 }
