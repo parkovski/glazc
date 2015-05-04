@@ -793,23 +793,20 @@ bool Component::insertVar(const std::string &name, Var *var) {
 
 // We have to make two passes through the tree. The first is the auto-declare
 // feature that adds all subs and declares to the table. 
-Component *Component::fromTree(Token *tree, bool del) {
+Component *Component::fromTree(Token *tree) {
     Component *p = new Component();
 
     if (!p->pass1(tree)) {
         printf("glazc: failed pass1\n");
         delete p;
-        return 0;
+        return nullptr;
     }
     
     if (!p->pass2(tree)) {
         printf("glazc: failed pass2\n");
         delete p;
-        return 0;
+        return nullptr;
     }
-    
-    if (del)
-        token_free_all(tree);
     
     return p;
 }

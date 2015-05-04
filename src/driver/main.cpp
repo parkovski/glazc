@@ -146,11 +146,11 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
-    Token *tree = parser->parse();
+    std::unique_ptr<Token, decltype(token_free_all)*> tree(parser->parse(), token_free_all);
     
     if (!parser->failed()) {
         if (emitter == PARSETREE) {
-            Token *node = tree;
+            Token *node = tree.get();
             while (node) {
                 printnode(node);
                 cout << endl;
@@ -158,14 +158,14 @@ int main(int argc, char *argv[]) {
             }
         }
         else if (emitter == AST) {
-            std::unique_ptr<Component> c(Component::fromTree(tree, true));
-            cout << c->toString() << endl;
+            std::unique_ptr<Component> c(Component::fromTree(tree.get()));
+            if (c) {
+                cout << c->toString() << endl;
+            }
         }
         else {
             cout << "sorry this emitter isn't currently supported!" << endl;
         }
-
-        if (tree) token_free_all(tree);
 
         //Component *c = Component::fromTree(tree, true);
         //delete c;

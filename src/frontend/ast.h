@@ -90,7 +90,7 @@ public:
     explicit Component();
     ~Component();
     
-    static Component *fromTree(Token *tree, bool del = true);
+    static Component *fromTree(Token *tree);
     
     Sub *getMain() { return implicit_main; }
     
